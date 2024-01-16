@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Donnees AMR"
 author: "Valentine BERTHIER"
 date: "2024-01-14"
 output: html_document
@@ -10,22 +10,63 @@ bibliography : projet-stat-2A.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Etude du jeu de données "donnees_AMR"
+## Importation des donées
+```{r}
+library(readxl)
+donnees_AMR <- read_excel("donnees/donnees_AMR.xlsx", 
+col_types = c("text", "numeric", "text", 
+"text", "text", "numeric", "numeric"))
+```
+Les variables du jeu sont `r names(donnees_AMR)`
+```{r}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+str(donnees_AMR)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+```{r}
+which(is.na(donnees_AMR)=="TRUE")
+# Aucune valeur manquante
 
-You can also embed plots, for example:
+unique(donnees_AMR$famille)
+# 2 catégories de famille
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+unique(donnees_AMR$population)
+
+```
+Il y a `r length(unique(donnees_AMR$population))` catégories différentes de population. 
+
+## Quels sont les catégories associées aux données humaines ? 
+
+```{r}
+pop_humaine<-unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])
+library(dplyr)
+donnees_AMR%>%
+  filter(famille=="humaine")%>%
+  group_by(population)
+```
+Les populations associées à l'analyse des données dites "humaine" sont `r pop_humaine`. 
+
+
+## Analyses des données Humaines
+
+```{r}
+library(dplyr)
+donnees_AMR%>%
+  filter(population == pop_humaine)%>%
+  group_by(population)%>%
+  select(`valeur AMR`,`effectif AMR`)%>%
+  summary()
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+
+
+
+
