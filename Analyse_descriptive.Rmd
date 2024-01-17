@@ -29,18 +29,25 @@ AMR_animale <- AMR %>%
   filter(famille == "animale")
 AMR_humaine <- AMR %>%
   filter(famille == "humaine")
+
+# Récupération des données nationales uniquement
+AMR_animale_fr <- AMR_animale[which(AMR_animale$region=='Nationale'),]
+AMR_humaine_fr <- AMR_humaine[which(AMR_humaine$region=='Nationale'),]
+
+# Création d'une indicatrice selon si la population provient d'un abattoir (1) ou non (0)
+AMR_animale_fr$abattoir <- as.integer(grepl("abattoir", AMR_animale_fr$population, ignore.case = TRUE))
 ```
 
 # VARIATIONS INTER-GROUPES
 ```{r}
 # Pour les animaux, on regarde la moyenne de l'AMR pour chaque population
-moyenne_AMR <- AMR_animale %>%
+moyenne_AMR <- AMR_animale_fr %>%
   group_by(population, famille) %>%
   summarize(moyenne_AMR = mean(`valeur AMR`))
 
 # On regarde la variance inter-groupe (et l'écart-type car plus parlant)
-AMR %>% summarize(ecart_type_AMR = sd(`valeur AMR`))
-AMR %>%
+AMR_animale_fr %>% summarize(ecart_type_AMR = sd(`valeur AMR`))
+AMR_animale_fr	 %>%
   group_by(population, famille) %>%
   summarize(
     moyenne_AMR = mean(`valeur AMR`),
@@ -59,39 +66,99 @@ ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, f
        y = "Moyenne de l'AMR") +
   theme_minimal()
 ```
-Variation inter-groupes plutôt importante chez les animaux : de 13,02 pour la population veau, à 62,39 pour la population chat et écart-type de 16,97. Variance inter-groupe de 77353,6.
+Variation inter-groupes plutôt importante chez les animaux : de 13,80 pour la population veau, à 65,30 pour la population bovin-adulte (Remarque : étonnant que les 2 soient aussi éloignés...) et écart-type de 17.86663. Variance inter-groupe de 49298.88.
 
 Pour poursuivre l'analyse :
-Similarité entre les populations possédant des moyennes proches (chat et chien qui vivent avec l'Homme --> moyenne parmis les plus élevées) ?
-La région influe-t-elle sur la moyenne et la variabilité ?
-Les populations en abattoir possèdent-elles des moyennes sensiblement différentes des autres populations (ex : porc abattoir vs porc "classique") ?
+Similarité entre les populations possédant des moyennes proches ? (chat et chien qui vivent plus en solitaires --> moyenne parmis les plus élevées)
+La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut faire une carte de la sensibilité en France)
 
+# COMPARAISON DES POPULATIONS EN ABATTOIR OU NON
+```{r}
+# Création d'une indicatrice selon si la population provient d'un abattoir (1) ou non (0)
+moyenne_AMR$abattoir <- as.integer(grepl("abattoir", moyenne_AMR$population, ignore.case = TRUE))
+
+# Graphique
+ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = factor(abattoir))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "AMR moyen en fonction du caractère 'abattoir' ou non",
+       x = "Population",
+       y = "AMR moyen",
+       fill = "Abattoir") +
+  theme_minimal()
+```
+Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance (sensibilité plus faible)
+
+Pour poursuivre l'analyse :
+Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
 
 # VARIATIONS INTRA-GROUPES
 ```{r}
-AMR_animale %>%
+AMR_animale_fr %>%
   group_by(population, famille) %>%
   summarize(
     variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
     .groups = 'drop'
   )
+
+# Boxplot pour représenter la variation intra-groupe
+boxplot(`valeur AMR` ~ reorder(population, `valeur AMR`), data = AMR_animale_fr,
+        main = "Valeur AMR par population sur la France entière",
+        ylab = "Valeur AMR",
+        xlab = "Population")
 ```
-Variance intra-groupe volatile en fonction des années --> d'où vient cette variabilité ? est-ce une tendance (croissante/décroissante) ou un phénomène aléatoire ?
-Similarités entre les population possédant des variances 
+Variance intra-groupe volatile en fonction des populations --> d'où vient cette variabilité ? Est-ce une tendance par années (croissante/décroissante) ou un phénomène aléatoire ? (réponse plus bas, spoiler c'est pas une tendance)
+
 
 Pour poursuivre l'analyse :
-Graphe des moyennes selon les années.
+Similarités entre les population possédant des variances intra proches ?
 
-# VISUALISATION DE DONNEES
+# EVOLUTION DE L'AMR EN FONCTION DES ANNEES
 ```{r}
-# Récupération des données nationales uniquement
-AMR_animal_fr <- AMR_animal[which(AMR_animal$region=='Nationale'),]
-AMR_humain_fr <- AMR_humain[which(AMR_humain$region=='Nationale'),]
+# Graphique général (peu lisible)
+ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
 
-boxplot(AMR_humain_fr$`valeur AMR`~AMR_humain_fr$population,
+# On filtre les données pour inclure uniquement les populations en abattoir ou non
+AMR_animale_fr_abattoir <- AMR_animale_fr %>%
+  filter(grepl("abattoir", population, ignore.case = TRUE))
+
+AMR_animale_fr_horsabattoir <- AMR_animale_fr %>%
+  filter(!grepl("abattoir", population, ignore.case = TRUE))
+
+# Graphique abattoir
+ggplot(AMR_animale_fr_abattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+
+# Graphique hors abattoir
+ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+```
+On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
+
+
+# VISUALISATION DE DONNEES (HUMAIN)
+```{r}
+boxplot(AMR_humaine_fr$`valeur AMR`~AMR_humaine_fr$population,
         main = "Valeur AMR par population sur la France entière",
         ylab = "Valuer AMR",
         xlab = "Population")
 ```
-
-ggg
+Valeurs de l'AMR plus élevées en ville qu'en EHPAD et Etablissements de santé --> l'AMR mesure bien la sensibilité des bactéries aux antibiotiques (et pas la résistance).
