@@ -37,6 +37,9 @@ AMR_humaine_fr <- AMR_humaine[which(AMR_humaine$region=='Nationale'),]
 # Création d'une indicatrice selon si la population provient d'un abattoir (1) ou non (0)
 AMR_animale_fr$abattoir <- as.integer(grepl("abattoir", AMR_animale_fr$population, ignore.case = TRUE))
 ```
+Attention ! On ne possède pas de données nationales pour les populations suivantes :
+Ovin, Caprin, volaille
+--> faire une moyenne avec les régions disponibles ? Problème : trouver comment les valeurs nationales ont-été trouvées.
 
 # VARIATIONS INTER-GROUPES
 ```{r}
@@ -67,9 +70,10 @@ ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, f
   theme_minimal()
 ```
 Variation inter-groupes plutôt importante chez les animaux : de 13,80 pour la population veau, à 65,30 pour la population bovin-adulte (Remarque : étonnant que les 2 soient aussi éloignés...) et écart-type de 17.86663. Variance inter-groupe de 49298.88.
+Similarité entre les populations possédant des moyennes proches ? (chat et chien qui vivent plus en solitaires --> moyenne parmis les plus élevées) Un peu trop abstrait car c'est à nous de déterminer les populations qui vivent plus en solitaire ou en groupe --> pas objectif d'un pdv statistique.
+
 
 Pour poursuivre l'analyse :
-Similarité entre les populations possédant des moyennes proches ? (chat et chien qui vivent plus en solitaires --> moyenne parmis les plus élevées)
 La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut faire une carte de la sensibilité en France)
 
 # COMPARAISON DES POPULATIONS EN ABATTOIR OU NON
@@ -91,6 +95,39 @@ Les populations en abattoir possèdent des moyennes sensiblement différentes de
 Pour poursuivre l'analyse :
 Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
 
+# SIGNIFICATIVITE 
+```{r}
+# Regression linéaire
+modele_regression <- lm(`valeur AMR` ~ population, data = AMR_animale_fr)
+summary(modele_regression)
+```
+Pour valider l'intéprétation des différentes populations, on effectue une regression linéaire sur celles-ci. 
+
+# ANALYSE DES REGIONS
+```{r}
+
+moyenne_par_region <- AMR_animale %>%
+  group_by(region) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
+
+ggplot(AMR_animale, aes(x = region, y = `valeur AMR`)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par région",
+       x = "Région",
+       y = "Valeur de l'AMR") +
+  theme_minimal()
+
+moyenne_par_region_population <- AMR_animale %>%
+  group_by(region, population) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
+
+modele_anova <- aov(moyenne_AMR ~ region + population, data = moyenne_par_region_population)
+summary(modele_anova)
+
+# je n'arrive pas à réaliser l'analyse que je veux :()
+```
+
+
 # VARIATIONS INTRA-GROUPES
 ```{r}
 AMR_animale_fr %>%
@@ -110,7 +147,7 @@ Variance intra-groupe volatile en fonction des populations --> d'où vient cette
 
 
 Pour poursuivre l'analyse :
-Similarités entre les population possédant des variances intra proches ?
+Similarités entre les population possédant des variances intra proches ? (par exemple les populations en abattoir vs les autres)
 
 # EVOLUTION DE L'AMR EN FONCTION DES ANNEES
 ```{r}
@@ -151,7 +188,7 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
        color = "Population") +
   theme_minimal()
 ```
-On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
+On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
 
 
 # VISUALISATION DE DONNEES (HUMAIN)
