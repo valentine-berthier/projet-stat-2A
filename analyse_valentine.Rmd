@@ -1,0 +1,103 @@
+---
+title: "analyse_valentine"
+author: "Valentine BERTHIER"
+date: "2024-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Etude du jeu de données "donnees_AMR"
+1. Importation du jeu de données
+```{r}
+rm(list=ls())
+library(readxl)
+donnees_AMR <- read_excel("donnees/donnees_AMR.xlsx", 
+col_types = c("text", "numeric", "text", 
+"text", "text", "numeric", "numeric"))
+
+```
+
+2. Quelles sont les variables de ce jeu de données
+```{r}
+names(donnees_AMR)
+```
+3. Y-a-t-il des valeurs manquantes ? 
+```{r}
+which(is.na(donnees_AMR)=="TRUE")
+```
+Il y n'y a pas de valeurs manquantes
+
+4. Quelles sont les catégories étudiées ? 
+`r unique(donnees_AMR$famille)`
+
+5. Quelles sont les familles étudiées ? 
+`r unique(donnees_AMR$population)``
+
+6. Lesquelles sont associées à l'étude des humains ? 
+`r unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])`
+
+```{r}
+#Nous les sauvegardons dans une variable
+pop_humaine <- unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])
+```
+
+7. 
+```{r}
+annees<-sort(unique(donnees_AMR$annee))
+donnees_AMR%>%
+  filter(famille=="humaine")%>%
+  group_by(population)
+for (year in annees){
+  
+}
+  
+```
+
+8. CARTE
+```{r}
+
+```
+
+8.1 Recupération des régions
+```{r}
+unique(donnees_AMR$region)
+```
+
+8.2 Chargement des données issues de l'INSEE pour associer la carte
+```{r}
+library(readr)
+region2019 <- read_csv("donnees/region2019.csv")
+```
+
+```{r}
+# Recuperer la France Metropolitaine de {rnaturalearth}
+library(rnaturalearth)
+france <- ne_states(country = "France", returnclass = "sf") %>% 
+  filter(!name %in% c("Guyane française","Mayotte"))
+# Carte
+tm_shape(france) +
+  tm_polygons(col = "")
+
+plot_ly(france, split = ~name, color = ~provnum_ne) %>% 
+  layout(showlegend = FALSE) 
+```
+
+8.3 Récupérons les données humaine / ES de 2012
+
+```{r}
+library(dplyr)
+ES_2012<-donnees_AMR%>%
+  filter(annee==2012 & famille=='humaine')%>%
+  select(region,`valeur AMR`,population)%>%
+  arrange(region)
+  
+# Remarque : toutes les années ne sont pas renseignées pour toutes les population humaine
+```
+
+
+
+
+
