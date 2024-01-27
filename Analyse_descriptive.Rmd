@@ -106,4 +106,4 @@ boxplot(AMR_humain_fr$`valeur AMR`~AMR_humain_fr$population,
         ylab = "Valuer AMR",
         xlab = "Population")
 ```
-
+val a fait du bon travail
