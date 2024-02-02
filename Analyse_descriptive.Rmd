@@ -199,3 +199,15 @@ boxplot(AMR_humaine_fr$`valeur AMR`~AMR_humaine_fr$population,
         xlab = "Population")
 ```
 Valeurs de l'AMR plus élevées en ville qu'en EHPAD et Etablissements de santé --> l'AMR mesure bien la sensibilité des bactéries aux antibiotiques (et pas la résistance).
+
+```{r}
+ggplot(AMR_humaine_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations humaines sur la France entière",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+```
+
