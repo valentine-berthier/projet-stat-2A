@@ -9,11 +9,20 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+0. LIBRARIES
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+
+```
+
 Etude du jeu de données "donnees_AMR"
 1. Importation du jeu de données
 ```{r}
 rm(list=ls())
-library(readxl)
 donnees_AMR <- read_excel("donnees/donnees_AMR.xlsx", 
 col_types = c("text", "numeric", "text", 
 "text", "text", "numeric", "numeric"))
@@ -47,14 +56,49 @@ pop_humaine <- unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine
 7. 
 ```{r}
 annees<-sort(unique(donnees_AMR$annee))
+
 donnees_AMR%>%
   filter(famille=="humaine")%>%
-  group_by(population)
-for (year in annees){
-  
-}
+  select(annee,population,famille,region,'valeur AMR')
+
+donnees_humaines_nationales<-donnees_AMR%>%
+  filter(famille=="humaine",region=='Nationale')%>%
+  select(annee,population,'valeur AMR')%>%
+  ggplot(aes(x=annee,y=`valeur AMR`))+ geom_col(aes(fill=population),position="dodge")+labs(title = "Etude de la pan-sensibilité aux antibiotiques sur les populations humaines",caption = "Cohorte : population de catégories humaine au niveau National \n Lecture : Les population en ville présentent une sensibilité plus élévée aux antibiotiques de 2012 à 2021 ")
+
+
+
   
 ```
+7.2 Pour une étude au sein des régions 
+
+```{r}
+
+regions<-unique(donnees_AMR$region)
+famille="humaine"
+region="Grand Est"
+
+max_AMR<-donnees_AMR%>%
+  filter(famille=="humaine",region==region)%>%
+  rename(v_AMR=`valeur AMR`)%>%
+  select(v_AMR)%>%
+  max()
+
+pop_max<-donnees_AMR$population[which(donnees_AMR$`valeur AMR`==max_AMR)]
+annee_max<-donnees_AMR$annee[which(donnees_AMR$`valeur AMR`==max_AMR)]
+
+plot<-donnees_AMR%>%
+  filter(famille=="humaine",region==region)%>%
+  select(annee,population,'valeur AMR')%>%
+  ggplot(aes(x=annee,y=`valeur AMR`))+ geom_col(aes(fill=population),position="dodge")+labs(title =str_glue("Etude de la pan-sensibilité aux antibiotiques sur les populations {famille}"),caption =str_glue("Cohorte : population de catégories humaine au niveau {region} \n","Lecture : Au niveau de : {region}, la population qui présente le plus haut taux de sensibilité aux antibiotiques ({max_AMR}) est :{pop_max} et ceci en {annee_max} "))
+
+
+  
+  
+
+```
+
+
 
 8. CARTE
 ```{r}
@@ -95,6 +139,28 @@ ES_2012<-donnees_AMR%>%
   arrange(region)
   
 # Remarque : toutes les années ne sont pas renseignées pour toutes les population humaine
+```
+
+
+
+9. Chargement des données en vrac
+
+```{r}
+library(readr)
+library(readxl)
+
+# Les régions 
+
+regions <- read_csv("donnees/region2019.csv")
+
+# données par régions 
+part_classe_age <- read_excel("donnees/série Insee part des classes d'age dans population.xlsx")
+
+
+#donnees AMR
+Classeur4 <- read_excel("donnees/Classeur4.xlsx")
+D_animale_nationale_avec_alea_corrige <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
+
 ```
 
 
