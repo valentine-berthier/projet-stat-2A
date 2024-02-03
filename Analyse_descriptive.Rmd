@@ -211,3 +211,59 @@ ggplot(AMR_humaine_fr, aes(x = annee, y = `valeur AMR`, group = population, colo
   theme_minimal()
 ```
 
+# VALIDATION DE L'INDICATEUR
+
+## Indicateur existant pour toutes les caractéristiques ?
+
+Caractéristiques de population, famille, dispositif, année et région
+```{r}
+summary(AMR)
+AMR$dispositif <- as.factor(AMR$dispositif)
+AMR$population <- as.factor(AMR$population)
+AMR$famille <- as.factor(AMR$famille)
+AMR$region <- as.factor(AMR$region)
+```
+Effectif AMR: nombre de souches testées
+
+S'il y a moins de 30 souches testées (en pratique on descend jusque 29), les valeurs ne sont pas récupérées, cela ne semble pas un échantillon assez représentatif de la réalité dans ces cas là. 
+
+Les dispositifs se concentrent sur une seule population, par exemple Medual-Ville ne récupère que les valeurs AMR pour la population humaine (en ville).
+
+```{r}
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$annee), FUN = sum)
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$region), FUN = sum)
+```
+On a de plus en plus de souches testées au fil des années. On peut supposer l'indicateur existant à long terme pour toutes les caractéristiques.
+
+Des souches sont testées pour toutes les régions métropolitaines (e plus de trois territoires d'outre-mer). On peut se douter que pour chaque région, ce ne sont pas forcément toutes les familles testées, effectivement il est possible qu'il n'y ai pas 30 cheveaux testés en une année dans une région particulière.
+
+L'indicateur est suffisament existant pour toutes les catégories de sorte à valider ce point.
+
+```{r}
+# Quels regroupements en des sous-populations ?
+# Recherche de liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR)
+
+ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+  geom_boxplot()
+
+# Idée : transformer le tableau de données pour faire des corrélations entre toutes les populations ( on le fait sur les données nationales)
+
+
+```
+
+
+```{r}
+# regroupement des populations
+AMR$groupe_population <- "Animaux de production"
+AMR$groupe_population[c(which(AMR$population=='Chien'|AMR$population=='Chat'))] <- "Animaux domestiques"
+AMR_fr <- AMR[which(AMR$region=='Nationale'),]
+ggplot(AMR_fr, aes(x = population, y = 'effectif AMR'))+
+  geom_col()
+```
+
+
+## Les situations et variables sont-eles contrastées ?
+
+```{r}
+boxplot(AMR$population ~ AMR$`valeur AMR`)
+```
