@@ -199,6 +199,12 @@ donnees_remodelees <- AMR_animale_fr %>%
 
 donnees_remodelees <- donnees_remodelees %>%
   arrange(annee)
+
+matrice_correlations <- cor(donnees_remodelees[, -1], use = "pairwise.complete.obs")
+library(corrplot)
+
+# Afficher le corrplot
+corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
 ```
 
 
