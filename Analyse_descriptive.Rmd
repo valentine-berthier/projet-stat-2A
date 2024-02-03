@@ -207,7 +207,6 @@ library(corrplot)
 corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
 ```
 
-
 # VISUALISATION DE DONNEES (HUMAIN)
 ```{r}
 boxplot(AMR_humaine_fr$`valeur AMR`~AMR_humaine_fr$population,
@@ -265,19 +264,16 @@ ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), f
 
 # Idée : transformer le tableau de données pour faire des corrélations entre toutes les populations ( on le fait sur les données nationales)
 
-
+# Transposition de la matrice
+library(tidyr)
+AMR_fr <- AMR[which(AMR$region=="Nationale"),]
+donnees_remodelees <- AMR_fr %>%
+  pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
 ```
 
-
-```{r}
-# regroupement des populations
-AMR$groupe_population <- "Animaux de production"
-AMR$groupe_population[c(which(AMR$population=='Chien'|AMR$population=='Chat'))] <- "Animaux domestiques"
-AMR_fr <- AMR[which(AMR$region=='Nationale'),]
-ggplot(AMR_fr, aes(x = population, y = 'effectif AMR'))+
-  geom_col()
-```
-
+On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir.
 
 ## Les situations et variables sont-eles contrastées ?
 
