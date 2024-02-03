@@ -190,6 +190,17 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
 ```
 On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
 
+# CORRELATIONS
+```{r}
+library(tidyr)
+
+donnees_remodelees <- AMR_animale_fr %>%
+  pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
+
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
+```
+
 
 # VISUALISATION DE DONNEES (HUMAIN)
 ```{r}
