@@ -92,10 +92,7 @@ plot<-donnees_AMR%>%
   select(annee,population,'valeur AMR')%>%
   ggplot(aes(x=annee,y=`valeur AMR`))+ geom_col(aes(fill=population),position="dodge")+labs(title =str_glue("Etude de la pan-sensibilité aux antibiotiques sur les populations {famille}"),caption =str_glue("Cohorte : population de catégories humaine au niveau {region} \n","Lecture : Au niveau de : {region}, la population qui présente le plus haut taux de sensibilité aux antibiotiques ({max_AMR}) est :{pop_max} et ceci en {annee_max} "))
 
-
-  
-  
-
+plot
 ```
 
 

@@ -243,7 +243,7 @@ Effectif AMR: nombre de souches testées
 
 S'il y a moins de 30 souches testées (en pratique on descend jusque 29), les valeurs ne sont pas récupérées, cela ne semble pas un échantillon assez représentatif de la réalité dans ces cas là. 
 
-Les dispositifs se concentrent sur une seule population, par exemple Medual-Ville ne récupère que les valeurs AMR pour la population humaine (en ville).
+Les dispositifs se concentrent sur une seule population, par exemple Medqual-Ville ne récupère que les valeurs AMR pour la population humaine (en ville).
 
 ```{r}
 aggregate(x = AMR$`effectif AMR`, by = list(AMR$annee), FUN = sum)
@@ -251,7 +251,7 @@ aggregate(x = AMR$`effectif AMR`, by = list(AMR$region), FUN = sum)
 ```
 On a de plus en plus de souches testées au fil des années. On peut supposer l'indicateur existant à long terme pour toutes les caractéristiques.
 
-Des souches sont testées pour toutes les régions métropolitaines (e plus de trois territoires d'outre-mer). On peut se douter que pour chaque région, ce ne sont pas forcément toutes les familles testées, effectivement il est possible qu'il n'y ai pas 30 cheveaux testés en une année dans une région particulière.
+Des souches sont testées pour toutes les régions métropolitaines (en plus de trois territoires d'outre-mer). On peut se douter que pour chaque région, ce ne sont pas forcément toutes les familles testées, effectivement il est possible qu'il n'y ai pas 30 cheveaux testés en une année dans une région particulière.
 
 L'indicateur est suffisament existant pour toutes les catégories de sorte à valider ce point.
 
