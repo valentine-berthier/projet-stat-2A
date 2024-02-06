@@ -199,8 +199,13 @@ donnees_remodelees <- AMR_animale_fr %>%
 
 donnees_remodelees <- donnees_remodelees %>%
   arrange(annee)
-```
 
+matrice_correlations <- cor(donnees_remodelees[, -1], use = "pairwise.complete.obs")
+library(corrplot)
+
+# Afficher le corrplot
+corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
+```
 
 # VISUALISATION DE DONNEES (HUMAIN)
 ```{r}
@@ -222,3 +227,58 @@ ggplot(AMR_humaine_fr, aes(x = annee, y = `valeur AMR`, group = population, colo
   theme_minimal()
 ```
 
+# VALIDATION DE L'INDICATEUR
+
+## Indicateur existant pour toutes les caractéristiques ?
+
+Caractéristiques de population, famille, dispositif, année et région
+```{r}
+summary(AMR)
+AMR$dispositif <- as.factor(AMR$dispositif)
+AMR$population <- as.factor(AMR$population)
+AMR$famille <- as.factor(AMR$famille)
+AMR$region <- as.factor(AMR$region)
+```
+Effectif AMR: nombre de souches testées
+
+S'il y a moins de 30 souches testées (en pratique on descend jusque 29), les valeurs ne sont pas récupérées, cela ne semble pas un échantillon assez représentatif de la réalité dans ces cas là. 
+
+Les dispositifs se concentrent sur une seule population, par exemple Medqual-Ville ne récupère que les valeurs AMR pour la population humaine (en ville).
+
+```{r}
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$annee), FUN = sum)
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$region), FUN = sum)
+```
+On a de plus en plus de souches testées au fil des années. On peut supposer l'indicateur existant à long terme pour toutes les caractéristiques.
+
+Des souches sont testées pour toutes les régions métropolitaines (en plus de trois territoires d'outre-mer). On peut se douter que pour chaque région, ce ne sont pas forcément toutes les familles testées, effectivement il est possible qu'il n'y ai pas 30 cheveaux testés en une année dans une région particulière.
+
+L'indicateur est suffisament existant pour toutes les catégories de sorte à valider ce point.
+
+```{r}
+# Quels regroupements en des sous-populations ?
+# Recherche de liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR)
+
+ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+  geom_boxplot()
+
+# Idée : transformer le tableau de données pour faire des corrélations entre toutes les populations ( on le fait sur les données nationales)
+
+# Transposition de la matrice
+library(tidyr)
+AMR_fr <- AMR[which(AMR$region=="Nationale"),]
+donnees_remodelees <- AMR_fr %>%
+  pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
+
+
+```
+
+On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
+
+## Les situations et variables sont-eles contrastées ?
+
+```{r}
+boxplot(AMR$population ~ AMR$`valeur AMR`)
+```

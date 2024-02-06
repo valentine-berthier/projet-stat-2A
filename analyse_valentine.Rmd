@@ -10,58 +10,60 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-0. LIBRARIES
-```{r}
+# 0. LIBRARIES
+```{r include=FALSE}
 library(readxl)
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(questionr)
+library(tidyverse)
 
 ```
 
-Etude du jeu de données "donnees_AMR"
-1. Importation du jeu de données
+#Etude du jeu de données "AMR"
+##1. Importation du jeu de données
 ```{r}
 rm(list=ls())
-donnees_AMR <- read_excel("donnees/donnees_AMR.xlsx", 
+AMR <- read_excel("donnees/donnees_AMR.xlsx", 
 col_types = c("text", "numeric", "text", 
 "text", "text", "numeric", "numeric"))
 
 ```
 
-2. Quelles sont les variables de ce jeu de données
+#2. Quelles sont les variables de ce jeu de données
 ```{r}
-names(donnees_AMR)
+names(AMR)
 ```
-3. Y-a-t-il des valeurs manquantes ? 
+##3. Y-a-t-il des valeurs manquantes ? 
 ```{r}
-which(is.na(donnees_AMR)=="TRUE")
+which(is.na(AMR)=="TRUE")
 ```
 Il y n'y a pas de valeurs manquantes
 
 4. Quelles sont les catégories étudiées ? 
-`r unique(donnees_AMR$famille)`
+`r unique(AMR$famille)`
 
 5. Quelles sont les familles étudiées ? 
-`r unique(donnees_AMR$population)``
+`r unique(AMR$population)``
 
 6. Lesquelles sont associées à l'étude des humains ? 
-`r unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])`
+`r unique(AMR$population[which(AMR$famille=="humaine")])`
 
 ```{r}
 #Nous les sauvegardons dans une variable
-pop_humaine <- unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])
+pop_humaine <- unique(AMR$population[which(AMR$famille=="humaine")])
 ```
 
 7. 
 ```{r}
-annees<-sort(unique(donnees_AMR$annee))
+annees<-sort(unique(AMR$annee))
 
-donnees_AMR%>%
+AMR%>%
   filter(famille=="humaine")%>%
   select(annee,population,famille,region,'valeur AMR')
 
-donnees_humaines_nationales<-donnees_AMR%>%
+donnees_humaines_nationales<-AMR%>%
   filter(famille=="humaine",region=='Nationale')%>%
   select(annee,population,'valeur AMR')%>%
   ggplot(aes(x=annee,y=`valeur AMR`))+ geom_col(aes(fill=population),position="dodge")+labs(title = "Etude de la pan-sensibilité aux antibiotiques sur les populations humaines",caption = "Cohorte : population de catégories humaine au niveau National \n Lecture : Les population en ville présentent une sensibilité plus élévée aux antibiotiques de 2012 à 2021 ")
@@ -74,43 +76,208 @@ donnees_humaines_nationales<-donnees_AMR%>%
 
 ```{r}
 
-regions<-unique(donnees_AMR$region)
+regions<-unique(AMR$region)
 famille="humaine"
 region="Grand Est"
 
-max_AMR<-donnees_AMR%>%
+max_AMR<-AMR%>%
   filter(famille=="humaine",region==region)%>%
   rename(v_AMR=`valeur AMR`)%>%
   select(v_AMR)%>%
   max()
 
-pop_max<-donnees_AMR$population[which(donnees_AMR$`valeur AMR`==max_AMR)]
-annee_max<-donnees_AMR$annee[which(donnees_AMR$`valeur AMR`==max_AMR)]
+pop_max<-AMR$population[which(AMR$`valeur AMR`==max_AMR)]
+annee_max<-AMR$annee[which(AMR$`valeur AMR`==max_AMR)]
 
-plot<-donnees_AMR%>%
+plot<-AMR%>%
   filter(famille=="humaine",region==region)%>%
   select(annee,population,'valeur AMR')%>%
   ggplot(aes(x=annee,y=`valeur AMR`))+ geom_col(aes(fill=population),position="dodge")+labs(title =str_glue("Etude de la pan-sensibilité aux antibiotiques sur les populations {famille}"),caption =str_glue("Cohorte : population de catégories humaine au niveau {region} \n","Lecture : Au niveau de : {region}, la population qui présente le plus haut taux de sensibilité aux antibiotiques ({max_AMR}) est :{pop_max} et ceci en {annee_max} "))
 
-
-  
-  
-
+plot
 ```
 
 
 
-8. CARTE
+# Etude des données manquantes
+
+```{r}
+# régions étudiées 
+unique(AMR$region)
+
+#années étudiées
+unique(AMR$annee)
+```
+
+
+```{r}
+# régions représentée 
+effectif_pop_annee<-table(AMR$annee,AMR$population)
+
+```
+Cette table nous montre le nombre de régions représentées (ou Nationale) par années pour chaque population. 
+
+Pour chaque population par année, le nombre maximale d'observation est de `length(unique(AMR$region))`correspondant au nombre de région présentent dans l'étude + l'étude au niveau National. 
+On remarque bien que certaines populations ne sont pas, ou très peu étudiées, pour certaines années. 
+
+La dernière ligne du tableau correspond au nombre de population étudiée (toutes régions confondues) par année. On voit bien que le dispositif a beaucoup évolué car en 2012, seulement 65 populations furent étudiées. Ce nombre atteint 152 en 2021. 
+
+```{r}
+barplot(effectif_pop_annee,beside=TRUE,legend=rownames(effectif_pop_annee))
+
+legend(x=10,y=10, legend = "Légende personnalisée", fill = "skyblue")
+
+```
+On ne voit pas grand chose sur ce graphique mais, on peut se rendre compte que certaines populations de sont pas très bien représentées au niveau régional. 
+
+
+
+
+```{r}
+# Années étudiées
+effectif_pop_region<-table(AMR$region,AMR$population)
+addmargins(effectif_pop_region)
+
+```
+Cette table nous renvoie le nombre d'années d'études (sans savoir lesquelles) des populations par régions
+
+La population la moins étudiée par année est le *porc-abattoir* avec seulement 8 études (régions et années confondues, cela peut être 8 régions sur une même année ou bien 8 années différentes sur des régions différentes ou non) et par région, c'est la Guadeloupe qui est la moins représentée avec seulement 8 populations étudiées (ici seule la famille humaine a été étudiée)
+
+
+
+# tableau d'effectif de population étudié (par année et par région)
+
+```{r}
+freq_pop<-freq(AMR$population,total=TRUE,valid=FALSE)
+#part des populations étudiée effectif=+1 si la population à été étudiée à une année dans une région
+
+```
+
+
+```{r}
+# Effectif totaux étudiés pour chaque année et chaque population indépendamment de la région
+df_region <- AMR %>% 
+  select(annee,population,region,famille,`effectif AMR`)%>%
+  filter(region!="Nationale")%>%
+  group_by(annee,population,famille) %>%
+  summarise(effectif_total_region = sum(`effectif AMR`))
+
+df_region
+
+# Essayons de contraster cela aux effectifs nationaux
+df_national<-AMR %>%
+  select(annee,population,famille,region,`effectif AMR`)%>%
+  filter(region=="Nationale")%>%
+  group_by(annee,population,famille) %>%
+  summarise(effectif_total_national = sum(`effectif AMR`))
+
+df_national
+
+# Joindre les tables en utilisant la fonction dplyr inner_join()
+effectifs_totaux <- inner_join(df_region,df_national,by = c("annee","population","famille"))
+effectifs_totaux<-effectifs_totaux%>%
+mutate(diff_effectif=effectif_total_national-effectif_total_region)
+# En supposant que les effectifs nationaux sont plus grand que ceux régionaux car on comptabiliserait les régions pour lesquelles nous n'étudions pas assez d'individus
+effectifs_totaux
+
+
+```
+```{r}
+effectifs_totaux
+#barplot(population ~ effectif_total_region, data = effectifs_totaux)
+# ça ne marche pas car on observe plusieurs fois chaque population
+
+```
+
+TEST
+
+valeur AMR par population et par année en histogramme
+```{r}
+library(ggplot2)
+AMR%>%
+  select(annee,population,`valeur AMR`)%>%
+  ggplot(aes(x=annee,y=`valeur AMR`))+
+  geom_bar()
+    
+# Un graphique avec des facets par population
+
+AMR%>%
+  select(annee,population,`valeur AMR`)%>%
+  ggplot(AMR, aes(x = annee, y = `valeur AMR`))+
+  geom_col(width = 1, fill = "green") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Annee d'étude",
+    y = "Valeur AMR",
+    title = "Valeur AMR par population") +
+  facet_wrap(~population)                       # les facets sont créés
+    
+
+```
+
+
+```{r}
+
+effectifs_totaux
+ggplot(data=effectifs_totaux, aes(x = annee, y = effectif_total_national)) +
+  geom_col(width = 1, fill = "skyblue") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population en fonction de l'année") +
+  facet_wrap(~population)   
+```
+On ne voit pas grand chose car les populations humaines et animales ont des effectifs très différents, nous allons les séparer
+
+```{r}
+effectifs_totaux_humain<-effectifs_totaux%>%
+  filter(famille==unique(AMR$famille)[2])
+
+ggplot(data=effectifs_totaux_humain, aes(x = annee, y = effectif_total_national)) +
+  geom_col(width = 1, fill = "skyblue") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population humaine en fonction de l'année") +
+  facet_wrap(~population) 
+
+effectifs_totaux_animale<-effectifs_totaux%>%
+  filter(famille==unique(AMR$famille)[1])
+
+ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national)) +
+  geom_col(width = 1, fill = "orange") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population animale en fonction de l'année") +
+  facet_wrap(~population) 
+
+  
+```
+
+
+
+
+
+
+
+
+
+
+# CARTE
 ```{r}
 
 ```
 
-8.1 Recupération des régions
+Carte.1 Recupération des régions
 ```{r}
-unique(donnees_AMR$region)
+unique(AMR$region)
 ```
 
-8.2 Chargement des données issues de l'INSEE pour associer la carte
+Carte.2 Chargement des données issues de l'INSEE pour associer la carte
 ```{r}
 library(readr)
 region2019 <- read_csv("donnees/region2019.csv")
@@ -133,7 +300,7 @@ plot_ly(france, split = ~name, color = ~provnum_ne) %>%
 
 ```{r}
 library(dplyr)
-ES_2012<-donnees_AMR%>%
+ES_2012<-AMR%>%
   filter(annee==2012 & famille=='humaine')%>%
   select(region,`valeur AMR`,population)%>%
   arrange(region)
