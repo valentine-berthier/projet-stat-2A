@@ -260,6 +260,15 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
 
 
+# Modèle LNR
+
+```{r}
+modele_LNR <- read_xlsx(
+  "donnees/Modele_LNR.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+```
+
 
 
 
