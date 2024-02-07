@@ -262,12 +262,68 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
 # Modèle LNR
 
+
 ```{r}
 modele_LNR <- read_xlsx(
   "donnees/Modele_LNR.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+#str(modele_LNR)
+#summary(modele_LNR)
+modele_LNR<-modele_LNR%>%
+  mutate(`profil AMR`=as.factor(`profil AMR`))%>%
+  mutate(population=as.factor(population))%>%
+  mutate(annee=as.factor(annee))%>%
+  mutate(region=as.factor(region))
+
+modele<-modele_LNR%>%
+  select(annee,population,region,`profil AMR`,`effectif AMR`)
+
 ```
+
+
+Analyse par population 
+
+```{r}
+
+etude_effectif_profil<-function(modele,pop){
+mod_eff_profil<-modele%>%
+  filter(population==pop)
+
+plot<-ggplot(data=mod_eff_profil, aes(x =`profil AMR`, y = `effectif AMR`),ylim=c(0,1000)) +
+  geom_col(width = 1, aes(fill =`profil AMR`)) +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Profil AMR ",
+    y = "Effectif AMR étudié",
+    title = str_glue("Effectif AMR par profil AMR de la population : {pop} \n en fonction de l'année étudiée")) +
+  facet_wrap(~annee) 
+return(plot)
+}
+
+
+for (pop in levels(modele$population)){
+  plot(etude_effectif_profil(modele,pop))
+  }
+
+
+```
+Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
+Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
+```{r}
+
+
+ggplot(data=modele, aes(x =`profil AMR`, y = `effectif AMR`)) +
+  geom_col(width = 1, fill = "pink") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population animale en fonction de l'année") +
+  facet_wrap(~population) 
+
+```
+étude sur les régions `unique(modele_LNR$region)`seulement et les populations `unique(modele_LNR$population)`
 
 
 
