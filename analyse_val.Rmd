@@ -313,6 +313,67 @@ Il n'y a donc pas de grande perte d'effectif suite aux AB testés.
 
 étude sur les régions `unique(modele_LNR$region)`seulement et les populations `unique(modele_LNR$population)`
 
+
+# Etudes des données PROMISE
+## chargement des données et rassemblement des tables
+```{r}
+modele_LNR <- read_xlsx(
+  "donnees/Modele_LNR.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+
+Resapath1 <- read_xlsx(
+  "donnees/ModeleCollecte_PROMISE_Resapath.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+ResapathDindes <- read_xlsx(
+  "donnees/ModeleCollecte_PROMISE_ResapathDindes.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+ResapathFrance <- read_xlsx(
+  "donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+ResapathOviCap <- read_xlsx(
+  "donnees/ModeleCollecte_PROMISE_ResapathOviCap.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+# avant de concaténer les tables, vérifions que les noms de colonnes sont bien les mêmes
+
+colnames(modele_LNR)==colnames(Resapath1)
+colnames(modele_LNR)==colnames(ResapathDindes)
+colnames(modele_LNR)==colnames(ResapathFrance)
+colnames(modele_LNR)==colnames(ResapathOviCap)
+
+# puisque ce sont bien les mêmes, on peut effectuer la concaténation
+
+
+Collecte <-rbind(modele_LNR,Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
+
+
+unique(Collecte$population,na.rm=TRUE)
+
+
+for (pop in levels(Collecte$population)){
+  plot(etude_effectif_profil(Collecte,pop))
+  }
+
+```
+
+```{r}
+PROMISE<-PROMISE%>%
+  mutate(population=as.factor(population))
+unique(PROMISE$population)
+
+for (pop in levels(PROMISE$population)){
+  plot(etude_effectif_profil(PROMISE,pop))
+}
+
+```
+
+
+
+# Etude de la contribution des variables à la variance
 ```{r}
 
 AMR_modele<-AMR%>%
@@ -335,6 +396,9 @@ coefficients <- coef(modele_H)
 variance_contributions= round((coefficients^2 / var(data$valeur_AMR))*100,2)
 print(variance_contributions)
 ```
+
+
+
 
 
 
