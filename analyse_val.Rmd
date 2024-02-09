@@ -257,7 +257,7 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
   
 ```
-
+En abattoir l'effectif AMR est toujours plus faible, et la résistance aux antibio est testée seulement tous les deux ans. Est ce que c'est plus faible car justement on ne test qu'une petite partie de tous les animaux en abattoir ?
 
 
 # Modèle LNR
