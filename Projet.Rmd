@@ -8,65 +8,98 @@ bibliography : projet-stat-2A.bib
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-# Etude du jeu de données "donnees_AMR"
-## Importation des donées
-```{r}
 library(readxl)
-donnees_AMR <- read_excel("donnees/donnees_AMR.xlsx", 
-col_types = c("text", "numeric", "text", 
-"text", "text", "numeric", "numeric"))
-```
-Les variables du jeu sont `r names(donnees_AMR)`
-```{r}
-
-str(donnees_AMR)
-
-```
-
-```{r}
-which(is.na(donnees_AMR)=="TRUE")
-# Aucune valeur manquante
-
-unique(donnees_AMR$famille)
-# 2 catégories de famille
-
-
-unique(donnees_AMR$population)
-
-```
-Il y a `r length(unique(donnees_AMR$population))` catégories différentes de population. 
-
-## Quels sont les catégories associées aux données humaines ? 
-
-```{r}
-pop_humaine<-unique(donnees_AMR$population[which(donnees_AMR$famille=="humaine")])
+library(tidyr)
 library(dplyr)
-donnees_AMR%>%
-  filter(famille=="humaine")%>%
-  group_by(population)
+library(corrplot)
 ```
-Les populations associées à l'analyse des données dites "humaine" sont `r pop_humaine`. 
 
+Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
 
-## Analyses des données Humaines
+# INTRODUCTION
+
+## Importation des données
 
 ```{r}
-library(dplyr)
-donnees_AMR%>%
-  filter(population == pop_humaine)%>%
-  group_by(population)%>%
-  select(`valeur AMR`,`effectif AMR`)%>%
-  summary()
+AMR <- read_excel("donnees/donnees_AMR.xlsx")
+```
 
+## Transformation des jeux de donées
+
+```{r}
+AMR_nationale <- AMR %>%
+  filter(region == "Nationale")
+AMR_regionale <- AMR %>%
+  filter(region != "Nationale")
+```
+
+## Regroupement des populations
+
+Un regroupement des population nous semble essentiel et logique pour faciliter l'analyse. Regrouper les populations qui se ressemblent permettrait  d'augmenter la variance inter-classe et assurer des situations contrastées (cf. point validation de l'indicateur)
+
+Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
+
+```{r}
+ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+  geom_boxplot()
+# la fonciton reorder() permet de trier les boxplots
+```
+Sur ce graphique nous avons ajouté la répartition des familles qui permet d'avoir un premier aperçu sur les valeurs AMR humaines par rapport à animales.
+
+Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
+
+Désormais, nous à l'étude des corrélations entre les sensibilités des populations. Pour cela, il faut transposer nos données de sorte à avoir les populations en colonnes plutôt qu'en lignes. Pour observer des corrélations en toute variable, nous allons regrouper les années par deux (en abattoir les tests ne sont effectués qu'une année sur deux), et prendre les données régionales plutôt que nationale pour agrandir le jeu de données.
+```{r}
+donnees_remodelees <- AMR_regionale %>%
+  select(annee, population, region, `valeur AMR`)
+  mutate(annee = case_when(
+    annee %in% c(2012, 2013) ~ "2012-2013",
+    annee %in% c(2014, 2015) ~ "2014-2015",
+    annee %in% c(2016, 2017) ~ "2016-2017",
+    annee %in% c(2018, 2019) ~ "2018-2019",
+    TRUE ~ "2020-2021")) %>%
+  group_by(annee, population, region)
 ```
 
 
+```{r}
+donnees_remodelees <- AMR_regionale %>%
+  mutate(annee = case_when(
+    annee %in% c(2012, 2013) ~ "2012-2013",
+    annee %in% c(2014, 2015) ~ "2014-2015",
+    annee %in% c(2016, 2017) ~ "2016-2017",
+    annee %in% c(2018, 2019) ~ "2018-2019",
+    TRUE ~ "2020-2021")) %>%
+  tidyr::pivot_wider(names_from = population, values_from = `valeur AMR`, id_cols = c(region, annee))
+
+donnees_remodelees <- as.data.frame(donnees_remodelees)
+
+for (i in 1:nrow(donnees_remodelees)) {
+  for (j in 3:ncol(donnees_remodelees)) {
+    donnees_remodelees[i, j] <- mean(unlist(donnees_remodelees[i, j]))
+    donnees_remodelees[i, j] <- unlist(donnees_remodelees[i, j])
+  }
+}
+
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
+```
+Il y a pleins de warning mais pour le moment je n'arrive pas à faire autrement. D'abord on concatène les années, ensuite on transpose la table pour avoir les populations en colonne. Ensuite ça a formé un tibble à la place d'un data frame donc je remets en data frame. Puis, je calcule les moyennes car les données sont en doubles depuis que j'ai fusionné les années par deux.
+
+```{r}
+matrice_correlations <- cor(unlist(donnees_remodelees[, -c(1,2)]), use = "pairwise.complete.obs")
+
+# Afficher le corrplot
+corrplot::corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
+```
 
 
+# VALIDATION DE L'INDICATEUR
 
+## Est-il possible de calculer l'indicateur pour toutes les caractéristiques ?
 
+## L'indicateur est-il basé sur un nombre d'isolats plus faible (significativement ?) que d'autres indicateurs de résistance ?
 
+## Les situations et les variables disponibles sont assez contrastées ?
 
-
+## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?

@@ -280,3 +280,5 @@ On a fait les corrélations pour les animaux et en France entière, l'objectif s
 ```{r}
 boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```
+
+
