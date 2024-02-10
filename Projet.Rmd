@@ -80,7 +80,7 @@ Selon la matrice des corrélations ci-dessus, un regroupement possible semble ê
 - poulet-abattoir, porc-abattoir, dinde-abattoir, volaille-abattoir
 - Lapin, bovin-abattoir, Porc
 - Ovin, volaille, veau
-Ce regroupement est à mettre en confrontation avec la réalité.
+Ce regroupement est à mettre en confrontation avec la réalité. Effectivement, il semble anormal de regrouper le bovin-abattoir avec des animaux non élevés en abattoir.
 
 # VALIDATION DE L'INDICATEUR
 
