@@ -12,6 +12,7 @@ library(readxl)
 library(tidyr)
 library(dplyr)
 library(corrplot)
+library(ggplot2)
 ```
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
@@ -48,51 +49,38 @@ Sur ce graphique nous avons ajouté la répartition des familles qui permet d'av
 
 Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
 
-Désormais, nous à l'étude des corrélations entre les sensibilités des populations. Pour cela, il faut transposer nos données de sorte à avoir les populations en colonnes plutôt qu'en lignes. Pour observer des corrélations en toute variable, nous allons regrouper les années par deux (en abattoir les tests ne sont effectués qu'une année sur deux), et prendre les données régionales plutôt que nationale pour agrandir le jeu de données.
+Désormais, nous faisons l'étude des corrélations entre les sensibilités des populations. Pour cela, il faut transposer nos données de sorte à avoir les populations en colonnes plutôt qu'en lignes. Pour observer des corrélations en toute variable, nous allons regrouper les années par deux (en abattoir les tests ne sont effectués qu'une année sur deux), et prendre les données régionales plutôt que nationale pour agrandir le jeu de données.
+
 ```{r}
-donnees_remodelees <- AMR_regionale %>%
-  select(annee, population, region, `valeur AMR`)
+AMR_transpose <- AMR_regionale %>%
+  select(annee, population, region, `valeur AMR`) %>%
   mutate(annee = case_when(
     annee %in% c(2012, 2013) ~ "2012-2013",
     annee %in% c(2014, 2015) ~ "2014-2015",
     annee %in% c(2016, 2017) ~ "2016-2017",
     annee %in% c(2018, 2019) ~ "2018-2019",
     TRUE ~ "2020-2021")) %>%
-  group_by(annee, population, region)
+  dplyr::group_by(population, annee, region) %>%
+  summarise(`valeur AMR` = mean(`valeur AMR`), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = population, values_from = `valeur AMR`)
 ```
+En premier, on ne sélectionne que les variables qui nous importent. Ensuite on concatène les années, cela créé des doublons, ainsi nous calculons la moyenne de la valeur pour le couple d'années. En dernier, nous transposons le data frame obtenu de sorte à avoir en colonne les populations et en ligne, les couples d'années et régions.
 
+Ainsi nous pouvons calculer les corrélations.
 
 ```{r}
-donnees_remodelees <- AMR_regionale %>%
-  mutate(annee = case_when(
-    annee %in% c(2012, 2013) ~ "2012-2013",
-    annee %in% c(2014, 2015) ~ "2014-2015",
-    annee %in% c(2016, 2017) ~ "2016-2017",
-    annee %in% c(2018, 2019) ~ "2018-2019",
-    TRUE ~ "2020-2021")) %>%
-  tidyr::pivot_wider(names_from = population, values_from = `valeur AMR`, id_cols = c(region, annee))
-
-donnees_remodelees <- as.data.frame(donnees_remodelees)
-
-for (i in 1:nrow(donnees_remodelees)) {
-  for (j in 3:ncol(donnees_remodelees)) {
-    donnees_remodelees[i, j] <- mean(unlist(donnees_remodelees[i, j]))
-    donnees_remodelees[i, j] <- unlist(donnees_remodelees[i, j])
-  }
-}
-
-donnees_remodelees <- donnees_remodelees %>%
-  arrange(annee)
-```
-Il y a pleins de warning mais pour le moment je n'arrive pas à faire autrement. D'abord on concatène les années, ensuite on transpose la table pour avoir les populations en colonne. Ensuite ça a formé un tibble à la place d'un data frame donc je remets en data frame. Puis, je calcule les moyennes car les données sont en doubles depuis que j'ai fusionné les années par deux.
-
-```{r}
-matrice_correlations <- cor(unlist(donnees_remodelees[, -c(1,2)]), use = "pairwise.complete.obs")
+matrice_correlations <- cor(AMR_transpose[, -c(1,2)], use = "pairwise.complete.obs")
 
 # Afficher le corrplot
-corrplot::corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
+corrplot::corrplot(matrice_correlations, method = "color", addrect = 2)
 ```
-
+Selon la matrice des corrélations ci-dessus, un regroupement possible semble être : 
+- Caprin, Chat, Cheval et Chien
+- EHPAS, ES, ES-hemoculture, ville
+- poulet-abattoir, porc-abattoir, dinde-abattoir, volaille-abattoir
+- Lapin, bovin-abattoir, Porc
+- Ovin, volaille, veau
+Ce regroupement est à mettre en confrontation avec la réalité.
 
 # VALIDATION DE L'INDICATEUR
 
