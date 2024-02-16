@@ -257,7 +257,7 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
   
 ```
-
+Remarque : Dans l'étude des populations humaines, pour les ES, les observations commencent seulement à l'année 2019. 
 
 
 # Modèle LNR
@@ -387,7 +387,7 @@ for (pop in levels(Collecte_grouped$population)){
 
 
 ```
-Question : Pourquoi la pan-sensibilité présente un effectif plus grand alors que le test est censé être validé par tous les tests avant ? Je m'attendais à obtenir un effectif relié à la 
+Question : Pourquoi la pan-sensibilité présente un effectif plus grand alors que le test est censé être validé par tous les tests avant ? Je m'attendais à obtenir un effectif au plus à même hauteur que l'effectif le plus faible parmi les antibiotiques testés.  
 
 
 
