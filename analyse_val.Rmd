@@ -258,7 +258,11 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
   
 ```
+<<<<<<< HEAD
 Remarque : Dans l'étude des populations humaines, pour les ES, les observations commencent seulement à l'année 2019. 
+=======
+En abattoir l'effectif AMR est toujours plus faible, et la résistance aux antibio est testée seulement tous les deux ans. Est ce que c'est plus faible car justement on ne test qu'une petite partie de tous les animaux en abattoir ?
+>>>>>>> 9c9bbf5656a773f8848a8c41a283d9f12ea36d8b
 
 
 # Modèle LNR
