@@ -20,6 +20,10 @@ AMR <- read_excel('donnees/donnees_AMR.xlsx')
 str(AMR)
 summary(AMR)
 
+#On renomme "bovin-abattoir" en "veau-abattoir"
+AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
+
+
 # Séparation des deux cas d'étude (animal et humain) version Florine
 AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
 AMR_animale <- AMR[which(AMR$famille=='animale'),]
