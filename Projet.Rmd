@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(tidyr)
 library(dplyr)
-library(corrplot)
 library(ggplot2)
 ```
 
@@ -23,6 +22,9 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 
 ```{r}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
+
+# On renomme "bovin-abattoir" en "veau-abattoir"
+AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 ```
 
 ## Transformation des jeux de donées
@@ -32,11 +34,17 @@ AMR_nationale <- AMR %>%
   filter(region == "Nationale")
 AMR_regionale <- AMR %>%
   filter(region != "Nationale")
+
+AMR_nationale_animal <- AMR_nationale %>%
+  filter(famille == "animale")
+AMR_nationale_humain <- AMR_nationale %>%
+  filter(famille == "humaine")
+
+# Indicatrice selon que la population provient d'un abattoir ou non
+AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
 ```
 
-## Regroupement des populations
-
-Un regroupement des population nous semble essentiel et logique pour faciliter l'analyse. Regrouper les populations qui se ressemblent permettrait  d'augmenter la variance inter-classe et assurer des situations contrastées (cf. point validation de l'indicateur)
+## Anlayse descriptive
 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
@@ -48,6 +56,64 @@ ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`
 Sur ce graphique nous avons ajouté la répartition des familles qui permet d'avoir un premier aperçu sur les valeurs AMR humaines par rapport à animales.
 
 Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
+
+# Famille animale
+
+```{r}
+moyenne_AMR <- AMR_nationale_animal %>%
+  group_by(population, famille, abattoir) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
+  arrange(moyenne_AMR)
+
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR), fill = abattoir))+
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Les animaux d'abattoir sont plus résistants aux antibiotiques",
+       subtitle = "L'antibiorésistance (AMR) des différentes populations animales",
+       caption = "Note: Moyenne calculée sur les années des données nationales.",
+       y = "Population",
+       x = "AMR moyen") +
+  theme_minimal()  +
+  guides(fill = FALSE) +
+  scale_fill_manual(values = c("lightblue", "lightgreen"))
+
+moyenne_AMR <- AMR_nationale_humain %>%
+  group_by(population, famille) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
+  arrange(moyenne_AMR)
+
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR)))+
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "En ville, les individus sont moins résistants aux antibiotiques",
+       subtitle = "L'antibiorésistance (AMR) des différentes populations humaines",
+       caption = "Note: Moyenne calculée sur les années des données nationales.",
+       y = "Population",
+       x = "AMR moyen") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Hausse générale de la sensibilité des populations en abattoir",
+       subtitle = "Évolution des moyennes de l'AMR",
+       x = NULL,
+       y = "AMR moyen",
+       color = "Population") +
+  theme_minimal()
+
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
+       subtitle = "Évolution des moyennes de l'AMR",
+       x = NULL,
+       y = "AMR moyen",
+       color = "Population") +
+  theme_minimal()
+```
+
+
 
 # VALIDATION DE L'INDICATEUR
 
