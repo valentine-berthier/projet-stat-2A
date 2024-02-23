@@ -49,39 +49,6 @@ Sur ce graphique nous avons ajouté la répartition des familles qui permet d'av
 
 Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
 
-Désormais, nous faisons l'étude des corrélations entre les sensibilités des populations. Pour cela, il faut transposer nos données de sorte à avoir les populations en colonnes plutôt qu'en lignes. Pour observer des corrélations en toute variable, nous allons regrouper les années par deux (en abattoir les tests ne sont effectués qu'une année sur deux), et prendre les données régionales plutôt que nationale pour agrandir le jeu de données.
-
-```{r}
-AMR_transpose <- AMR_regionale %>%
-  select(annee, population, region, `valeur AMR`) %>%
-  mutate(annee = case_when(
-    annee %in% c(2012, 2013) ~ "2012-2013",
-    annee %in% c(2014, 2015) ~ "2014-2015",
-    annee %in% c(2016, 2017) ~ "2016-2017",
-    annee %in% c(2018, 2019) ~ "2018-2019",
-    TRUE ~ "2020-2021")) %>%
-  dplyr::group_by(population, annee, region) %>%
-  summarise(`valeur AMR` = mean(`valeur AMR`), .groups = "drop") %>%
-  tidyr::pivot_wider(names_from = population, values_from = `valeur AMR`)
-```
-En premier, on ne sélectionne que les variables qui nous importent. Ensuite on concatène les années, cela créé des doublons, ainsi nous calculons la moyenne de la valeur pour le couple d'années. En dernier, nous transposons le data frame obtenu de sorte à avoir en colonne les populations et en ligne, les couples d'années et régions.
-
-Ainsi nous pouvons calculer les corrélations.
-
-```{r}
-matrice_correlations <- cor(AMR_transpose[, -c(1,2)], use = "pairwise.complete.obs")
-
-# Afficher le corrplot
-corrplot::corrplot(matrice_correlations, method = "color", addrect = 2)
-```
-Selon la matrice des corrélations ci-dessus, un regroupement possible semble être : 
-- Caprin, Chat, Cheval et Chien
-- EHPAS, ES, ES-hemoculture, ville
-- poulet-abattoir, porc-abattoir, dinde-abattoir, volaille-abattoir
-- Lapin, bovin-abattoir, Porc
-- Ovin, volaille, veau
-Ce regroupement est à mettre en confrontation avec la réalité. Effectivement, il semble anormal de regrouper le bovin-abattoir avec des animaux non élevés en abattoir.
-
 # VALIDATION DE L'INDICATEUR
 
 ## Est-il possible de calculer l'indicateur pour toutes les caractéristiques ?
