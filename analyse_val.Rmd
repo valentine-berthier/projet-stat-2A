@@ -5,13 +5,14 @@ date: "2024-01-16"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, echo=FALSE, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
 ```
 
 
 # 0. LIBRARIES
-```{r include=FALSE}
+```{r librairies, echo=FALSE, include=FALSE}
 library(readxl)
 library(dplyr)
 library(ggplot2)
@@ -23,8 +24,7 @@ library(tidyverse)
 
 #Etude du jeu de données "AMR"
 ##1. Importation du jeu de données
-```{r}
-rm(list=ls())
+```{r chargement AMR, echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx", 
 col_types = c("text", "numeric", "text", 
 "text", "text", "numeric", "numeric"))
@@ -32,11 +32,11 @@ col_types = c("text", "numeric", "text",
 ```
 
 #2. Quelles sont les variables de ce jeu de données
-```{r}
+```{r etude noms , echo=FALSE, include=FALSE}
 names(AMR)
 ```
 ##3. Y-a-t-il des valeurs manquantes ? 
-```{r}
+```{r études valeurs manquantes, echo=FALSE, include=FALSE}
 which(is.na(AMR)=="TRUE")
 ```
 Il y n'y a pas de valeurs manquantes
@@ -50,13 +50,13 @@ Il y n'y a pas de valeurs manquantes
 6. Lesquelles sont associées à l'étude des humains ? 
 `r unique(AMR$population[which(AMR$famille=="humaine")])`
 
-```{r}
+```{r pop humaine, echo=FALSE, include=FALSE}
 #Nous les sauvegardons dans une variable
 pop_humaine <- unique(AMR$population[which(AMR$famille=="humaine")])
 ```
 
 7. 
-```{r}
+```{r ?, echo=FALSE, include=FALSE}
 annees<-sort(unique(AMR$annee))
 
 AMR%>%
@@ -74,7 +74,7 @@ donnees_humaines_nationales<-AMR%>%
 ```
 7.2 Pour une étude au sein des régions 
 
-```{r}
+```{r étude régionale, echo=FALSE, include=FALSE}
 
 regions<-unique(AMR$region)
 famille="humaine"
@@ -101,7 +101,7 @@ plot
 
 # Etude des données manquantes
 
-```{r}
+```{r regions manquantes, echo=FALSE, include=FALSE}
 # régions étudiées 
 unique(AMR$region)
 
@@ -110,7 +110,7 @@ unique(AMR$annee)
 ```
 
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 # régions représentée 
 effectif_pop_annee<-table(AMR$annee,AMR$population)
 
@@ -122,7 +122,7 @@ On remarque bien que certaines populations ne sont pas, ou très peu étudiées,
 
 La dernière ligne du tableau correspond au nombre de population étudiée (toutes régions confondues) par année. On voit bien que le dispositif a beaucoup évolué car en 2012, seulement 65 populations furent étudiées. Ce nombre atteint 152 en 2021. 
 
-```{r}
+```{r étude effectifs, echo=FALSE, include=FALSE}
 barplot(effectif_pop_annee,beside=TRUE,legend=rownames(effectif_pop_annee))
 
 legend(x=10,y=10, legend = "Légende personnalisée", fill = "skyblue")
@@ -133,7 +133,7 @@ On ne voit pas grand chose sur ce graphique mais, on peut se rendre compte que c
 
 
 
-```{r}
+```{r étude effectif 2, echo=FALSE, include=FALSE}
 # Années étudiées
 effectif_pop_region<-table(AMR$region,AMR$population)
 addmargins(effectif_pop_region)
@@ -147,14 +147,14 @@ La population la moins étudiée par année est le *porc-abattoir* avec seulemen
 
 # tableau d'effectif de population étudié (par année et par région)
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 freq_pop<-freq(AMR$population,total=TRUE,valid=FALSE)
 #part des populations étudiée effectif=+1 si la population à été étudiée à une année dans une région
 
 ```
 
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 # Effectif totaux étudiés pour chaque année et chaque population indépendamment de la région
 df_region <- AMR %>% 
   select(annee,population,region,famille,`effectif AMR`)%>%
@@ -182,55 +182,19 @@ effectifs_totaux
 
 
 ```
-```{r}
+
+```{r, echo=FALSE, include=FALSE}
 effectifs_totaux
 #barplot(population ~ effectif_total_region, data = effectifs_totaux)
 # ça ne marche pas car on observe plusieurs fois chaque population
 
 ```
 
-TEST
-
-valeur AMR par population et par année en histogramme
-```{r}
-library(ggplot2)
-AMR%>%
-  select(annee,population,`valeur AMR`)%>%
-  ggplot(aes(x=annee,y=`valeur AMR`))+
-  geom_bar()
-    
-# Un graphique avec des facets par population
-
-AMR%>%
-  select(annee,population,`valeur AMR`)%>%
-  ggplot(AMR, aes(x = annee, y = `valeur AMR`))+
-  geom_col(width = 1, fill = "green") +       # tracer le nombre de cas sous forme de colonnes
-  theme_minimal()+                              # simplifier les  arrière-plans
-  labs(                                         # ajouter  les noms d'axes, titres ... 
-    x = "Annee d'étude",
-    y = "Valeur AMR",
-    title = "Valeur AMR par population") +
-  facet_wrap(~population)                       # les facets sont créés
-    
-
-```
 
 
-```{r}
+On sépare les populations humaines et animales pour permettre une meilleure comparaison car les effectifs sont d'ordres différents. 
 
-effectifs_totaux
-ggplot(data=effectifs_totaux, aes(x = annee, y = effectif_total_national)) +
-  geom_col(width = 1, fill = "skyblue") +       # tracer le nombre de cas sous forme de colonnes
-  theme_minimal()+                              # simplifier les  arrière-plans
-  labs(                                         # ajouter  les noms d'axes, titres ... 
-    x = "Année d'étude",
-    y = "Effectif AMR étudié",
-    title = "Effectif total AMR par population en fonction de l'année") +
-  facet_wrap(~population)   
-```
-On ne voit pas grand chose car les populations humaines et animales ont des effectifs très différents, nous allons les séparer
-
-```{r}
+```{r étude des effectifs de données_AMR, echo=FALSE, include=TRUE}
 effectifs_totaux_humain<-effectifs_totaux%>%
   filter(famille==unique(AMR$famille)[2])
 
@@ -257,81 +221,127 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 
   
 ```
-En abattoir l'effectif AMR est toujours plus faible, et la résistance aux antibio est testée seulement tous les deux ans. Est ce que c'est plus faible car justement on ne test qu'une petite partie de tous les animaux en abattoir ?
 
 
-# Modèle LNR
+Observations : 
+1. Dans l'étude des populations humaines, pour les ES, les observations commencent seulement à l'année 2019. 
+2. En abattoir l'effectif AMR est toujours plus faible, et la résistance aux antibio est testée seulement tous les deux ans. Est ce que c'est plus faible car justement on ne test qu'une petite partie de tous les animaux en abattoir ?
 
-
-```{r}
-modele_LNR <- read_xlsx(
-  "donnees/Modele_LNR.xlsx",
-  sheet = "Modele de collecte", #nom de la page à garder
-)
-#str(modele_LNR)
-#summary(modele_LNR)
-modele_LNR<-modele_LNR%>%
-  mutate(`profil AMR`=as.factor(`profil AMR`))%>%
-  mutate(population=as.factor(population))%>%
-  mutate(annee=as.factor(annee))%>%
-  mutate(region=as.factor(region))
-
-modele<-modele_LNR%>%
-  select(annee,population,region,`profil AMR`,`effectif AMR`)
-
-```
-
-
-Analyse par population 
-
-```{r}
-
-etude_effectif_profil<-function(modele,pop){
-mod_eff_profil<-modele%>%
-  filter(population==pop)
-plot<-ggplot(data=mod_eff_profil, aes(x =`profil AMR`, y = `effectif AMR`),ylim=c(0,1000)) +
-  geom_col(width = 1, aes(fill =`profil AMR`)) +       # tracer le nombre de cas sous forme de colonnes
-  theme_minimal()+                              # simplifier les  arrière-plans
-  labs(                                         # ajouter  les noms d'axes, titres ... 
-    x = "Profil AMR ",
-    y = "Effectif AMR étudié",
-    title = str_glue("Effectif AMR par profil AMR de la population : {pop} \n en fonction de l'année étudiée")) +
-  facet_wrap(~annee)+
-  scale_x_discrete(labels=NULL, breaks=NULL)
-return(plot)
-}
-
-```
-Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
-Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
-
-étude sur les régions `unique(modele_LNR$region)`seulement et les populations `unique(modele_LNR$population)`
 
 
 # Etudes des données PROMISE
-## chargement des données et rassemblement des tables
-```{r}
-modele_LNR <- read_xlsx(
+#### chargement des données, reformattage et filtration (sans SARM)
+Les variables qui nous intéressent ici sont : 
+
+* population
+* region 
+* annee
+* profil_AMR
+* effectif_AMR
+```{r mise en forme des Reseau Resapath, echo=FALSE, include=FALSE}
+
+#LNR
+
+Modele_LNR <- read_xlsx(
   "donnees/Modele_LNR.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+# changement "bovin-abattoir" en "veau-abattoir"
+Modele_LNR$population[which(Modele_LNR$population=='bovin-abattoir')]="veau-abattoir"
 
+# reformatage des variables étudiées
+Modele_LNR<-Modele_LNR%>%
+  mutate(population=as.factor(population),
+         region=as.factor(region),
+         profil_AMR=as.factor(`profil AMR`),
+         )%>%
+  rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+  
+
+Modele_LNR_sansSARM<-Modele_LNR%>%
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+  
+
+
+
+# Resapath 1
 Resapath1 <- read_xlsx(
   "donnees/ModeleCollecte_PROMISE_Resapath.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+# reformatage des variables étudiées
+Resapath1<-Resapath1%>%
+  mutate(population=as.factor(population),
+         region=as.factor(region),
+         profil_AMR=as.factor(`profil AMR`),
+         )%>%
+  rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+Resapath1_sansSARM<-Resapath1%>%
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+
+
+# Dindes 
+
 ResapathDindes <- read_xlsx(
   "donnees/ModeleCollecte_PROMISE_ResapathDindes.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+ResapathDindes<-ResapathDindes%>%
+  mutate(population=as.factor(population),
+         region=as.factor(region),
+         profil_AMR=as.factor(`profil AMR`),
+         )%>%
+  rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+levels(ResapathDindes$profil_AMR)
+
+# on retire les observations SARM et cela supprime également les lignes où il n'y a rien
+ResapathDindes_sansSARM<-ResapathDindes%>%
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+
+
+# En enlevant SARM, on perd 4131 observations ???? NON, c'est juste qu'il y a énormément de lignes complètement vides
+
+#France
+
 ResapathFrance <- read_xlsx(
   "donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+
+
+
+# ! La variable region n'est pas renseignée ici puisqu'on traite les données Nationale
+ResapathFrance<-ResapathFrance%>%
+  mutate(population=as.factor(population),
+         profil_AMR=as.factor(`profil AMR`),
+         region=as.factor(region)
+         )%>%
+  rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+levels(ResapathFrance$profil_AMR)
+# on retire les observations SARM et cela supprime également les lignes où il n'y a rien
+ResapathFrance_sansSARM<-ResapathFrance%>%
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+
+
+#OviCap
+
 ResapathOviCap <- read_xlsx(
   "donnees/ModeleCollecte_PROMISE_ResapathOviCap.xlsx",
   sheet = "Modele de collecte", #nom de la page à garder
 )
+
+ResapathOviCap<-ResapathOviCap%>%
+  mutate(population=as.factor(population),
+         region=as.factor(region),
+         profil_AMR=as.factor(`profil AMR`),
+         )%>%
+  rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+
+# on retire les observations SARM et cela supprime également les lignes où il n'y a rien
+ResapathOviCap_sansSARM<-ResapathOviCap%>%
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+
+
 # avant de concaténer les tables, vérifions que les noms de colonnes sont bien les mêmes
 
 #colnames(modele_LNR)==colnames(Resapath1)
@@ -339,38 +349,65 @@ ResapathOviCap <- read_xlsx(
 #colnames(modele_LNR)==colnames(ResapathFrance)
 #colnames(modele_LNR)==colnames(ResapathOviCap)
 
-# puisque ce sont bien les mêmes, on peut effectuer la concaténation
+
+# en effectuant la concaténation, on obtient 6351 lignes identiques
+Collecte_regionale<-rbind(Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
+
+Collecte_regionale<-Collecte_regionale[-which(is.na(Collecte_regionale$dispositif)==TRUE),]
+
+length(which(duplicated(Collecte_regionale)=='TRUE'))
+
+# on ne peut pas effectuer la concaténation car ResapathFrance reprend des informations des autres tables
+
+# à ne surtout pas FAIRE :
+# Collecte <-rbind(modele_LNR,Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
 
 
-Collecte <-rbind(modele_LNR,Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
-Collecte<-Collecte%>%
-  mutate(population=as.factor(population))
-str(Collecte)
-#unique(Collecte$population,na.rm=TRUE)
 
-levels(Collecte$population)
-for (pop in levels(Collecte$population)){
-  plot(etude_effectif_profil(Collecte,pop))
-  }
-
-Collecte%>%
-  filter(population=='Volaille',annee==2012,`profil AMR`=="pan-sensible")
 
 ```
+
+| Réseau | Dispositif |Région | population | bactérie(s) étudiée(s)|Profils AMR |
+|:-------:|:-------:|:-------:|:--------:|:------:|:------:|
+| Resapath1_sansSARM|`r unique(Resapath1_sansSARM$dispositif)`| `r levels(Resapath1_sansSARM$region)` | `r levels(Resapath1_sansSARM$population)` | `r unique(Resapath1_sansSARM$bacterie)`|`r unique(Resapath1_sansSARM$profil_AMR)` |
+| ResapathDindes_sansSARM | `r unique(ResapathDindes_sansSARM$dispositif)`|`r levels(ResapathDindes_sansSARM$region)` | `r levels(ResapathDindes_sansSARM$population)` |`r unique(ResapathDindes_sansSARM$bacterie)`| `r unique(ResapathDindes_sansSARM$profil_AMR)` |
+| ResapathFrance_sansSARM |`r unique(ResapathFrance_sansSARM$dispositif)`| `r levels(ResapathFrance_sansSARM$region)` | `r levels(ResapathFrance_sansSARM$population)` |`r unique(ResapathFrance_sansSARM$bacterie)`| `r unique(ResapathFrance_sansSARM$profil_AMR)` | 
+| ResapathOviCap_sansSARM |`r unique(ResapathOviCap_sansSARM$dispositif)`|`r levels(ResapathOviCap_sansSARM$region)` | `r levels(ResapathOviCap_sansSARM$population)` | `r unique(ResapathOviCap_sansSARM$bacterie)`|`r unique(ResapathOviCap_sansSARM$profil_AMR)` | 
+| Modele_LNR_sansSARM |`r unique(Modele_LNR_sansSARM$dispositif)`| `r levels(Modele_LNR_sansSARM$region)` | `r levels(Modele_LNR_sansSARM$population)` | `r unique(Modele_LNR_sansSARM$bacterie)`|`r unique(Modele_LNR_sansSARM$profil_AMR)` | 
+
+
+
 On remarque que les données se superposent car plusieurs régions. Les régions concernées étant `unique(Collecte$region)`
 Comment faire ? Peut-être faire une moyenne des effectifs par région en groupant par année ?
 
-```{r}
-Collecte_grouped<-Collecte%>%
-  group_by(annee,`profil AMR`,population)%>%
-  summarise(`effectif AMR`=mean(`effectif AMR`))
+
+#### Comment est-ce possible que la population des lapins soit si grande ? 
+études des observations de la variable region 
+La table Collecte est formées des données issues des tables : 
+* donnes_AMR
+* Resapath
+* ResapathDindes
+* ResapathFrance
+* ResapathOviCap
+
+L'erreur est tout à fait logique puisque les données sont doublées ...
+Dans le réseau `ResapathFrance`, on étudie les populations suivantes : 
+`levels(ResapathFrance$population)`
+En revanche, pourquoi on a une autre table `ResapathDindes` ?
+
+
+## Modèle Resapath 
+```{r Idee 1, echo=FALSE, include=TRUE}
+#Collecte_grouped<-Collecte%>%
+#  group_by(annee,`profil AMR`,population)%>%
+#  summarise(`effectif AMR`=mean(`effectif AMR`))
 
 #Modification de la fonction pour prendre en compte le calcul moyen de l'effectif (groupement par année donc effectif moyen des région)
 etude_effectifmoy_profil<-function(modele,pop){
 mod_effmoy_profil<-modele%>%
   filter(population==pop)
-plot<-ggplot(data=mod_effmoy_profil, aes(x =`profil AMR`, y = `effectif AMR`),ylim=c(0,1000)) +
-  geom_col(width = 1, aes(fill =`profil AMR`)) +       # tracer le nombre de cas sous forme de colonnes
+plot<-ggplot(data=mod_effmoy_profil, aes(x =profil_AMR, y = effectif_AMR),ylim=c(0,1000)) +
+  geom_col(width = 1, aes(fill =profil_AMR)) +       # tracer le nombre de cas sous forme de colonnes
   theme_minimal()+                              # simplifier les  arrière-plans
   labs(                                         # ajouter  les noms d'axes, titres ... 
     x = "Profil AMR ",
@@ -381,18 +418,98 @@ plot<-ggplot(data=mod_effmoy_profil, aes(x =`profil AMR`, y = `effectif AMR`),yl
 return(plot)
 }
 
-for (pop in levels(Collecte_grouped$population)){
-  plot(etude_effectifmoy_profil(Collecte_grouped,pop))
-  }
+etude_effectif<-function(modele,pop){
+table1<-modele%>%
+  filter(profil_AMR=="pan-sensible")%>%
+  mutate(eff_pansensible=effectif_AMR)%>%
+  select(annee,population,eff_pansensible)
+table2<-modele%>%
+  filter(profil_AMR=="C3G-R")%>%
+  mutate(eff_C3G=effectif_AMR)%>%
+  select(annee,population,effectif_AMR)
+
+# Jointure des tables sur les variables var1 et var2
+J <- merge(table1, table2, by = c(annee, population), all = TRUE)
+
+plot<-J%>%
+  ggplot(data=modele, aes(x =population, y = eff_pansensible/eff_C3G),ylim=c(0,1000)) +
+  geom_col(width = 1, aes(fill =profil_AMR)) +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Profil AMR ",
+    y = "Effectif AMR moyen (par région) étudié",
+    title = str_glue("Effectif AMR moyen par profil AMR de la population : {pop} \n en fonction de l'année étudiée")) +
+  facet_wrap(~annee)+
+  scale_x_discrete(labels=NULL, breaks=NULL)
+return(plot)
+}
+
+
+pop<-"veau"
+#etude_effectif(ResapathFrance_sansSARM,pop)
+#for (pop in levels(ResapathFrance_sansSARM$population)){
+#  plot(etude_effectifmoy_profil(Modele_LNR_sansSARM,pop))
+#  }
 
 
 ```
-Question : Pourquoi la pan-sensibilité présente un effectif plus grand alors que le test est censé être validé par tous les tests avant ? Je m'attendais à obtenir un effectif relié à la 
+```{r Bonne Idee, echo=FALSE, include=TRUE}
+
+
+table1<-ResapathFrance_sansSARM%>%
+  filter(profil_AMR=="pan-sensible")%>%
+  mutate(eff_pansensible=effectif_AMR)%>%
+  select(annee,population,eff_pansensible)
+table2<-ResapathFrance_sansSARM%>%
+  filter(profil_AMR=="C3G-R")%>%
+  mutate(eff_C3G=effectif_AMR)%>%
+  select(annee,population,eff_C3G)
+
+pop<-"veau"
+
+# Jointure des tables sur les variables var1 et var2
+J <- merge(table1, table2, by = c("annee", "population"), all = TRUE)
+
+for (pop in levels(J$population)){
+  J1<-J%>%
+    filter(population==pop)%>%
+    mutate(taux_eff=round((eff_pansensible*100)/eff_C3G,2),
+           min_max_value = ifelse(taux_eff == max(taux_eff), "MAX", ifelse(taux_eff == min(taux_eff), "MIN", "none")))
+  moyenne=round(mean(J1$taux_eff),2)
+  
+  plot<-ggplot(data=J1, aes(x =annee, y = taux_eff,fill=min_max_value))+
+    geom_col(width = 0.5) +       # tracer le nombre de cas sous forme de colonnes
+    theme_minimal()+                              # simplifier les  arrière-plans
+    labs(                                         # ajouter  les noms d'axes, titres ... 
+      x = "annee ",
+      y = "taux de sensibilité à tous les tests par rapport à C3G-R",
+      title = "taux de sensibilité par population étudiées en fonction de l'année étudiée",
+      subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
+    facet_wrap(~population)+
+    scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+    scale_fill_manual(values = c("MIN" = "red", "MAX" = "green","none" = "grey"),guide = "none")
+  plot(plot)
+}
+
+
+
+```
+
+
+Analyse par population 
+
+
+Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
+Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
+
+étude sur les régions `unique(modele_LNR$region)`seulement et les populations `unique(modele_LNR$population)`
+
+Question : Pourquoi la pan-sensibilité présente un effectif plus grand alors que le test est censé être validé par tous les tests avant ? Je m'attendais à obtenir un effectif au plus à même hauteur que l'effectif le plus faible parmi les antibiotiques testés.  
 
 
 
 # Etude de la contribution des variables à la variance
-```{r}
+```{r, echo=FALSE, include=FALSE}
 
 AMR_modele<-AMR%>%
   select(annee,famille,population,region,`valeur AMR`)%>%
@@ -417,6 +534,31 @@ print(variance_contributions)
 
 
 
+```{r}
+
+
+library(tidyr)
+library(dplyr)
+
+
+
+for (pop in levels(ResapathFrance_sansSARM$population)){
+  tab<-ResapathFrance_sansSARM %>% 
+    filter(population==pop)%>%
+    spread(annee,effectif_AMR)%>%
+    xtabs(effectif_AMR ~ profil_AMR + annee, data = data.frame(annee,profil_AMR))
+  
+  print(tab)
+}
+colnames(ResapathFrance_sansSARM)
+
+
+
+tableau_croise <- xtabs(ResapathFrance_sansSARM$effectif_AMR~ ResapathFrance_sansSARM$profil_AMR + ResapathFrance_sansSARM$annee, data = data.frame(ResapathFrance_sansSARM$annee, ResapathFrance_sansSARM$profil_AMR))
+  
+```
+
+
 
 
 
@@ -428,37 +570,25 @@ print(variance_contributions)
 
 
 # CARTE
-```{r}
+```{r, echo=FALSE, include=FALSE}
 
 ```
 
 Carte.1 Recupération des régions
-```{r}
+```{r, echo=FALSE, include=FALSE}
 unique(AMR$region)
 ```
 
 Carte.2 Chargement des données issues de l'INSEE pour associer la carte
-```{r}
+```{r, echo=FALSE, include=FALSE}
 library(readr)
 region2019 <- read_csv("donnees/region2019.csv")
 ```
 
-```{r}
-# Recuperer la France Metropolitaine de {rnaturalearth}
-library(rnaturalearth)
-france <- ne_states(country = "France", returnclass = "sf") %>% 
-  filter(!name %in% c("Guyane française","Mayotte"))
-# Carte
-tm_shape(france) +
-  tm_polygons(col = "")
-
-plot_ly(france, split = ~name, color = ~provnum_ne) %>% 
-  layout(showlegend = FALSE) 
-```
 
 8.3 Récupérons les données humaine / ES de 2012
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 library(dplyr)
 ES_2012<-AMR%>%
   filter(annee==2012 & famille=='humaine')%>%
@@ -472,7 +602,7 @@ ES_2012<-AMR%>%
 
 9. Chargement des données en vrac
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 library(readr)
 library(readxl)
 
