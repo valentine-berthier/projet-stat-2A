@@ -295,9 +295,12 @@ usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
 ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
   geom_point()+ 
   theme_minimal()+                     
-  labs(x = "Résistance aux antibiotiques",
+  labs(x = "Sensibilité aux antibiotiques",
        y = "Usage d'antibiotiques",
        title = "Taux de sensibilité par population et usage") +
   facet_wrap(~population, scales = "free")
 ```
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
+
+Une regression bêta est privilégiée car on alasye la proportion d'animaux sensibles aux antibiotiques.
+Il faudra utiliser la fonction betar du package mgcv.
