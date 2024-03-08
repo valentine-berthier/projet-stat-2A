@@ -283,10 +283,6 @@ donnees_remodelees <- AMR_fr %>%
   pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
 donnees_remodelees <- donnees_remodelees %>%
   arrange(annee)
-<<<<<<< HEAD
-
-=======
->>>>>>> 9c9bbf5656a773f8848a8c41a283d9f12ea36d8b
 ```
 
 On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
@@ -297,4 +293,22 @@ On a fait les corrélations pour les animaux et en France entière, l'objectif s
 boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```
 
+# AMU et AMR
 
+```{r}
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
+```
+
+```{r}
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
+  geom_point()+ 
+  theme_minimal()+                     
+  labs(x = "Sensibilité aux antibiotiques",
+       y = "Usage d'antibiotiques",
+       title = "Taux de sensibilité par population et usage") +
+  facet_wrap(~population, scales = "free")
+```
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
+
+Une regression bêta est privilégiée car on alasye la proportion d'animaux sensibles aux antibiotiques.
+Il faudra utiliser la fonction betar du package mgcv.

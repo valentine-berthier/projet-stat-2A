@@ -256,9 +256,11 @@ Modele_LNR<-Modele_LNR%>%
          profil_AMR=as.factor(`profil AMR`),
          )%>%
   rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
+  
 
 Modele_LNR_sansSARM<-Modele_LNR%>%
-  filter(profil_AMR!="SARM")
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
+  
 
 
 
@@ -275,7 +277,7 @@ Resapath1<-Resapath1%>%
          )%>%
   rename(effectif_AMR=`effectif AMR`, valeur_AMR=`valeur AMR`)
 Resapath1_sansSARM<-Resapath1%>%
-  filter(profil_AMR!="SARM")
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
 
 
 # Dindes 
@@ -294,7 +296,7 @@ levels(ResapathDindes$profil_AMR)
 
 # on retire les observations SARM et cela supprime également les lignes où il n'y a rien
 ResapathDindes_sansSARM<-ResapathDindes%>%
-  filter(profil_AMR!="SARM")
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
 
 
 # En enlevant SARM, on perd 4131 observations ???? NON, c'est juste qu'il y a énormément de lignes complètement vides
@@ -318,7 +320,7 @@ ResapathFrance<-ResapathFrance%>%
 levels(ResapathFrance$profil_AMR)
 # on retire les observations SARM et cela supprime également les lignes où il n'y a rien
 ResapathFrance_sansSARM<-ResapathFrance%>%
-  filter(profil_AMR!="SARM")
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
 
 
 #OviCap
@@ -337,7 +339,7 @@ ResapathOviCap<-ResapathOviCap%>%
 
 # on retire les observations SARM et cela supprime également les lignes où il n'y a rien
 ResapathOviCap_sansSARM<-ResapathOviCap%>%
-  filter(profil_AMR!="SARM")
+  filter(profil_AMR!="SARM",bacterie=="Escherichia coli")
 
 
 # avant de concaténer les tables, vérifions que les noms de colonnes sont bien les mêmes
@@ -348,12 +350,19 @@ ResapathOviCap_sansSARM<-ResapathOviCap%>%
 #colnames(modele_LNR)==colnames(ResapathOviCap)
 
 
+# en effectuant la concaténation, on obtient 6351 lignes identiques
+Collecte_regionale<-rbind(Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
 
+Collecte_regionale<-Collecte_regionale[-which(is.na(Collecte_regionale$dispositif)==TRUE),]
+
+length(which(duplicated(Collecte_regionale)=='TRUE'))
 
 # on ne peut pas effectuer la concaténation car ResapathFrance reprend des informations des autres tables
 
 # à ne surtout pas FAIRE :
 # Collecte <-rbind(modele_LNR,Resapath1,ResapathDindes,ResapathFrance,ResapathOviCap)
+
+
 
 
 ```
@@ -387,8 +396,8 @@ Dans le réseau `ResapathFrance`, on étudie les populations suivantes :
 En revanche, pourquoi on a une autre table `ResapathDindes` ?
 
 
-## Modèle LNR
-```{r, echo=FALSE, include=TRUE}
+## Modèle Resapath 
+```{r Idee 1, echo=FALSE, include=TRUE}
 #Collecte_grouped<-Collecte%>%
 #  group_by(annee,`profil AMR`,population)%>%
 #  summarise(`effectif AMR`=mean(`effectif AMR`))
@@ -409,11 +418,79 @@ plot<-ggplot(data=mod_effmoy_profil, aes(x =profil_AMR, y = effectif_AMR),ylim=c
 return(plot)
 }
 
+etude_effectif<-function(modele,pop){
+table1<-modele%>%
+  filter(profil_AMR=="pan-sensible")%>%
+  mutate(eff_pansensible=effectif_AMR)%>%
+  select(annee,population,eff_pansensible)
+table2<-modele%>%
+  filter(profil_AMR=="C3G-R")%>%
+  mutate(eff_C3G=effectif_AMR)%>%
+  select(annee,population,effectif_AMR)
+
+# Jointure des tables sur les variables var1 et var2
+J <- merge(table1, table2, by = c(annee, population), all = TRUE)
+
+plot<-J%>%
+  ggplot(data=modele, aes(x =population, y = eff_pansensible/eff_C3G),ylim=c(0,1000)) +
+  geom_col(width = 1, aes(fill =profil_AMR)) +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Profil AMR ",
+    y = "Effectif AMR moyen (par région) étudié",
+    title = str_glue("Effectif AMR moyen par profil AMR de la population : {pop} \n en fonction de l'année étudiée")) +
+  facet_wrap(~annee)+
+  scale_x_discrete(labels=NULL, breaks=NULL)
+return(plot)
+}
+
+
+pop<-"veau"
+#etude_effectif(ResapathFrance_sansSARM,pop)
+#for (pop in levels(ResapathFrance_sansSARM$population)){
+#  plot(etude_effectifmoy_profil(Modele_LNR_sansSARM,pop))
+#  }
+
+
+```
+```{r Bonne Idee, echo=FALSE, include=TRUE}
+
+
+table1<-ResapathFrance_sansSARM%>%
+  filter(profil_AMR=="pan-sensible")%>%
+  mutate(eff_pansensible=effectif_AMR)%>%
+  select(annee,population,eff_pansensible)
+table2<-ResapathFrance_sansSARM%>%
+  filter(profil_AMR=="C3G-R")%>%
+  mutate(eff_C3G=effectif_AMR)%>%
+  select(annee,population,eff_C3G)
+
 pop<-"veau"
 
-for (pop in levels(Modele_LNR_sansSARM$population)){
-  plot(etude_effectifmoy_profil(Modele_LNR_sansSARM,pop))
-  }
+# Jointure des tables sur les variables var1 et var2
+J <- merge(table1, table2, by = c("annee", "population"), all = TRUE)
+
+for (pop in levels(J$population)){
+  J1<-J%>%
+    filter(population==pop)%>%
+    mutate(taux_eff=round((eff_pansensible*100)/eff_C3G,2),
+           min_max_value = ifelse(taux_eff == max(taux_eff), "MAX", ifelse(taux_eff == min(taux_eff), "MIN", "none")))
+  moyenne=round(mean(J1$taux_eff),2)
+  
+  plot<-ggplot(data=J1, aes(x =annee, y = taux_eff,fill=min_max_value))+
+    geom_col(width = 0.5) +       # tracer le nombre de cas sous forme de colonnes
+    theme_minimal()+                              # simplifier les  arrière-plans
+    labs(                                         # ajouter  les noms d'axes, titres ... 
+      x = "annee ",
+      y = "taux de sensibilité à tous les tests par rapport à C3G-R",
+      title = "taux de sensibilité par population étudiées en fonction de l'année étudiée",
+      subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
+    facet_wrap(~population)+
+    scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+    scale_fill_manual(values = c("MIN" = "red", "MAX" = "green","none" = "grey"),guide = "none")
+  plot(plot)
+}
+
 
 
 ```
@@ -455,6 +532,31 @@ variance_contributions= round((coefficients^2 / var(data$valeur_AMR))*100,2)
 print(variance_contributions)
 ```
 
+
+
+```{r}
+
+
+library(tidyr)
+library(dplyr)
+
+
+
+for (pop in levels(ResapathFrance_sansSARM$population)){
+  tab<-ResapathFrance_sansSARM %>% 
+    filter(population==pop)%>%
+    spread(annee,effectif_AMR)%>%
+    xtabs(effectif_AMR ~ profil_AMR + annee, data = data.frame(annee,profil_AMR))
+  
+  print(tab)
+}
+colnames(ResapathFrance_sansSARM)
+
+
+
+tableau_croise <- xtabs(ResapathFrance_sansSARM$effectif_AMR~ ResapathFrance_sansSARM$profil_AMR + ResapathFrance_sansSARM$annee, data = data.frame(ResapathFrance_sansSARM$annee, ResapathFrance_sansSARM$profil_AMR))
+  
+```
 
 
 
