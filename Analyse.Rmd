@@ -310,5 +310,5 @@ ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
 ```
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
 
-Une regression bêta est privilégiée car on alasye la proportion d'animaux sensibles aux antibiotiques.
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
 Il faudra utiliser la fonction betar du package mgcv.
