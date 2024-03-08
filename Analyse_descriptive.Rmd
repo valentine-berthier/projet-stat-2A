@@ -23,6 +23,14 @@ summary(AMR)
 #On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 
+#Code pour rajouter les volailles quand on les auras...
+#volaille <- read_excel('donnees/volaille.xlsx')
+#volaille <- volaille[, -c(3,5,6,7)]
+#volaille$famille <- 'animale'
+#volaille$dispositif <- NA
+#volaille$region <- ifelse(volaille$region == 'NA', 'Nationale', volaille$region)
+#AMR <- rbind(AMR, volaille)
+
 
 # Séparation des deux cas d'étude (animal et humain) version Florine
 AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
@@ -86,15 +94,15 @@ La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut fa
 moyenne_AMR$abattoir <- as.integer(grepl("abattoir", moyenne_AMR$population, ignore.case = TRUE))
 
 # Graphique
-ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = factor(abattoir))) +
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, fill = factor(abattoir), y = reorder(population, moyenne_AMR))) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "AMR moyen en fonction du caractère 'abattoir' ou non",
-       x = "Population",
-       y = "AMR moyen",
+       x = "AMR moyen",
+       y = "Population",
        fill = "Abattoir") +
   theme_minimal()
 ```
-Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance (sensibilité plus faible)
+Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance aux antibiotiques (sensibilité plus faible)
 
 Pour poursuivre l'analyse :
 Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
