@@ -453,6 +453,7 @@ pop<-"veau"
 
 
 ```
+
 ```{r Bonne Idee, echo=FALSE, include=TRUE}
 
 
@@ -480,11 +481,10 @@ for (pop in levels(J$population)){
   plot<-ggplot(data=J1, aes(x =annee, y = taux_eff,fill=min_max_value))+
     geom_col(width = 0.5) +       # tracer le nombre de cas sous forme de colonnes
     theme_minimal()+                              # simplifier les  arrière-plans
-    labs(                                         # ajouter  les noms d'axes, titres ... 
-      x = "annee ",
-      y = "taux de sensibilité à tous les tests par rapport à C3G-R",
-      title = "taux de sensibilité par population étudiées en fonction de l'année étudiée",
-      subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
+    labs(x = "annee ",
+      y = "Taux de sensibilité à tous les tests par rapport \n à C3G-R",
+      title = "Taux de sensibilité par population étudiées en fonction de l'année étudiée",
+      caption = str_glue("Cohorte : population de {pop} au niveau National \n Lecture : En moyenne, la perte d'effectif pour la catégorie pan-sensible est de {round(100-moyenne,2)}% "))+
     facet_wrap(~population)+
     scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
     scale_fill_manual(values = c("MIN" = "red", "MAX" = "green","none" = "grey"),guide = "none")
@@ -534,29 +534,6 @@ print(variance_contributions)
 
 
 
-```{r}
-
-
-library(tidyr)
-library(dplyr)
-
-
-
-for (pop in levels(ResapathFrance_sansSARM$population)){
-  tab<-ResapathFrance_sansSARM %>% 
-    filter(population==pop)%>%
-    spread(annee,effectif_AMR)%>%
-    xtabs(effectif_AMR ~ profil_AMR + annee, data = data.frame(annee,profil_AMR))
-  
-  print(tab)
-}
-colnames(ResapathFrance_sansSARM)
-
-
-
-tableau_croise <- xtabs(ResapathFrance_sansSARM$effectif_AMR~ ResapathFrance_sansSARM$profil_AMR + ResapathFrance_sansSARM$annee, data = data.frame(ResapathFrance_sansSARM$annee, ResapathFrance_sansSARM$profil_AMR))
-  
-```
 
 
 
