@@ -23,6 +23,14 @@ summary(AMR)
 #On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 
+#Code pour rajouter les volailles quand on les auras...
+#volaille <- read_excel('donnees/volaille.xlsx')
+#volaille <- volaille[, -c(3,5,6,7)]
+#volaille$famille <- 'animale'
+#volaille$dispositif <- NA
+#volaille$region <- ifelse(volaille$region == 'NA', 'Nationale', volaille$region)
+#AMR <- rbind(AMR, volaille)
+
 
 # Séparation des deux cas d'étude (animal et humain) version Florine
 AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
@@ -86,15 +94,15 @@ La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut fa
 moyenne_AMR$abattoir <- as.integer(grepl("abattoir", moyenne_AMR$population, ignore.case = TRUE))
 
 # Graphique
-ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = factor(abattoir))) +
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, fill = factor(abattoir), y = reorder(population, moyenne_AMR))) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "AMR moyen en fonction du caractère 'abattoir' ou non",
-       x = "Population",
-       y = "AMR moyen",
+       x = "AMR moyen",
+       y = "Population",
        fill = "Abattoir") +
   theme_minimal()
 ```
-Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance (sensibilité plus faible)
+Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance aux antibiotiques (sensibilité plus faible)
 
 Pour poursuivre l'analyse :
 Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
@@ -275,10 +283,6 @@ donnees_remodelees <- AMR_fr %>%
   pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
 donnees_remodelees <- donnees_remodelees %>%
   arrange(annee)
-<<<<<<< HEAD
-
-=======
->>>>>>> 9c9bbf5656a773f8848a8c41a283d9f12ea36d8b
 ```
 
 On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
@@ -289,4 +293,22 @@ On a fait les corrélations pour les animaux et en France entière, l'objectif s
 boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```
 
+# AMU et AMR
 
+```{r}
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
+```
+
+```{r}
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
+  geom_point()+ 
+  theme_minimal()+                     
+  labs(x = "Sensibilité aux antibiotiques",
+       y = "Usage d'antibiotiques",
+       title = "Taux de sensibilité par population et usage") +
+  facet_wrap(~population, scales = "free")
+```
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
+
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
+Il faudra utiliser la fonction betar du package mgcv.

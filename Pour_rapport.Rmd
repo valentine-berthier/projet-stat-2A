@@ -1,0 +1,190 @@
+---
+title: "Donnees AMR"
+author: "Valentine BERTHIER"
+date: "2024-01-14"
+output: html_document
+bibliography : projet-stat-2A.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
+
+# INTRODUCTION
+
+## Importation des données
+
+```{r}
+AMR <- read_excel("donnees/donnees_AMR.xlsx")
+
+# Données permettant d'étudier la perte d'effectif des pan-sensibles
+ResapathFrance <- read_xlsx("donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",sheet = "Modele de collecte")
+
+# On renomme "bovin-abattoir" en "veau-abattoir"
+AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
+```
+
+## Transformation des jeux de donées
+
+```{r}
+AMR_nationale <- AMR %>%
+  filter(region == "Nationale")
+AMR_regionale <- AMR %>%
+  filter(region != "Nationale")
+
+AMR_nationale_animal <- AMR_nationale %>%
+  filter(famille == "animale")
+AMR_nationale_humain <- AMR_nationale %>%
+  filter(famille == "humaine")
+
+# Indicatrice selon que la population provient d'un abattoir ou non
+AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
+
+# Uniformisation entre les différentes tables
+ResapathFrance <- ResapathFrance%>%
+  mutate(population = as.factor(population),
+         `profil AMR`= as.factor(`profil AMR`),
+         region = as.factor(region))
+
+# On retire les observations SARM (ça supprime aussi les lignes vide)
+ResapathFrance_sansSARM<-ResapathFrance%>%
+  filter(`profil AMR` != "SARM", bacterie == "Escherichia coli")
+```
+
+## Anlayse descriptive
+
+Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
+
+```{r}
+ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+  geom_boxplot() +
+  labs(title = "Des résultats dispersés pour toutes les populations",
+       subtitle = "Comparaison des valeurs AMR entre animaux et humains",
+       caption = "Note: Chaque ligne de données correspond à une région et une année",
+       y = NULL,
+       x = "AMR moyen")+
+  theme_minimal()  +
+  scale_fill_manual(values = c("lightgreen", "orange"))
+```
+Sur ce graphique nous avons ajouté la répartition des familles qui permet d'avoir un premier aperçu sur les valeurs AMR humaines par rapport à animales.
+
+Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
+
+# Famille animale
+
+```{r}
+moyenne_AMR <- AMR_nationale_animal %>%
+  group_by(population, famille, abattoir) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
+  arrange(moyenne_AMR)
+
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR), fill = abattoir))+
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Les animaux d'abattoir sont plus résistants aux antibiotiques",
+       subtitle = "L'antibiorésistance (AMR) des différentes populations animales",
+       caption = "Note: Moyenne calculée sur les années des données nationales.",
+       y = "Population",
+       x = "AMR moyen") +
+  theme_minimal()  +
+  guides(fill = FALSE) +
+  scale_fill_manual(values = c("lightblue", "lightgreen"))
+
+moyenne_AMR <- AMR_nationale_humain %>%
+  group_by(population, famille) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
+  arrange(moyenne_AMR)
+
+ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR)))+
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "En ville, les individus sont moins résistants aux antibiotiques",
+       subtitle = "L'antibiorésistance (AMR) des différentes populations humaines",
+       caption = "Note: Moyenne calculée sur les années des données nationales.",
+       y = "Population",
+       x = "AMR moyen") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Hausse générale de la sensibilité des populations en abattoir",
+       subtitle = "Évolution des moyennes de l'AMR",
+       x = NULL,
+       y = "AMR moyen",
+       color = "Population") +
+  theme_minimal()
+
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `effectif AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Hausse générale de la sensibilité des populations en abattoir",
+       subtitle = "Évolution des moyennes de l'AMR",
+       x = NULL,
+       y = "AMR moyen",
+       color = "Population") +
+  theme_minimal()
+
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
+       subtitle = "Évolution des moyennes de l'AMR",
+       x = NULL,
+       y = "AMR moyen",
+       color = "Population") +
+  theme_minimal()
+```
+
+# VALIDATION DE L'INDICATEUR
+
+## Est-il possible de calculer l'indicateur pour toutes les caractéristiques ?
+
+## L'indicateur est-il basé sur un nombre d'isolats plus faible (significativement ?) que d'autres indicateurs de résistance ?
+
+```{r}
+table1 <- ResapathFrance_sansSARM %>%
+  filter(`profil AMR` == "pan-sensible") %>%
+  mutate(eff_pansensible = `effectif AMR`) %>%
+  select(annee, population, eff_pansensible)
+
+table2 <- ResapathFrance_sansSARM %>%
+  filter(`profil AMR` == "C3G-R") %>%
+  mutate(eff_C3G = `effectif AMR`) %>%
+  select(annee, population, eff_C3G)
+
+table_join <- merge(table1, table2, by = c("annee", "population"), all = TRUE)
+
+for (pop in levels(table_join$population)){
+  table_join1 <- table_join %>%
+    filter(population == pop) %>%
+    mutate(taux_eff = round((eff_pansensible * 100) / eff_C3G, 2),
+           min_max_value = ifelse(taux_eff == max(taux_eff), "MAX", ifelse(taux_eff == min(taux_eff), "MIN", "none")))
+  
+  moyenne = round(mean(table_join1$taux_eff),2)
+  
+  plot <- ggplot(data = table_join1, aes(x = annee, y = taux_eff, fill = min_max_value))+
+    geom_col(width = 0.5) + 
+    theme_minimal()+                     
+    labs(x = "Annee",
+         y = "Taux de sensibilité à tous les tests par rapport à C3G-R",
+         title = "Taux de sensibilité par population en fonction de l'année",
+         subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
+    facet_wrap(~population)+
+    scale_y_continuous(labels = scales::number_format(suffix="%"), limits = c(0,100))+
+    scale_fill_manual(values = c("MIN" = "red", "MAX" = "green","none" = "grey"), guide = "none")
+  plot(plot)
+}
+```
+Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
+Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
+
+## Les situations et les variables disponibles sont assez contrastées ?
+
+## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
