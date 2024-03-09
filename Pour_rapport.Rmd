@@ -46,6 +46,8 @@ AMR_nationale_humain <- AMR_nationale %>%
 # Indicatrice selon que la population provient d'un abattoir ou non
 AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
 
+AMR_regionale$famille2 <- paste(AMR_regionale$famille, ifelse(grepl("abattoir", AMR_regionale$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
+
 # Uniformisation entre les différentes tables
 ResapathFrance <- ResapathFrance%>%
   mutate(population = as.factor(population),
@@ -53,7 +55,7 @@ ResapathFrance <- ResapathFrance%>%
          region = as.factor(region))
 
 # On retire les observations SARM (ça supprime aussi les lignes vide)
-ResapathFrance_sansSARM<-ResapathFrance%>%
+ResapathFrance_sansSARM <- ResapathFrance%>%
   filter(`profil AMR` != "SARM", bacterie == "Escherichia coli")
 ```
 
@@ -62,15 +64,18 @@ ResapathFrance_sansSARM<-ResapathFrance%>%
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
 ```{r}
-ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
-  geom_boxplot() +
+label <- c("Veau", "Lapin", "Poulet", "Porc", "Volaille", "Dinde", "Caprin", "EHPAD", "Veau", "ES-hemoculture", "Ovin", "ES", "Porc", "Ville", "Cheval","Volaille", "Chien", "Bovin", "Chat")
+
+ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille2))+
+  geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Comparaison des valeurs AMR entre animaux et humains",
        caption = "Note: Chaque ligne de données correspond à une région et une année",
        y = NULL,
        x = "AMR moyen")+
-  theme_minimal()  +
-  scale_fill_manual(values = c("lightgreen", "orange"))
+  theme_minimal()+
+  scale_fill_manual(values = c("#90fc9b", "#4b9c4f", "#fa9c43"))+
+  scale_y_discrete(labels = label)
 ```
 Sur ce graphique nous avons ajouté la répartition des familles qui permet d'avoir un premier aperçu sur les valeurs AMR humaines par rapport à animales.
 
