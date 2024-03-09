@@ -324,17 +324,21 @@ Une regression bêta est privilégiée car on analyse la proportion d'animaux se
 Il faudra utiliser la fonction betareg du package de même nom
 
 ```{r}
-library(betareg)
-
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
   mutate(`valeur AMR` = `valeur AMR`*0.01)
-
-model <- betareg(data = usage_animal, `valeur AMR` ~ population + Valeur_AMU, link = "logit")
-summary(model)
-
-model_log <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, family
-= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
-summary(model_log)
 ```
 
+Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
+
+```{r}
+library(betareg)
+
+model_glm <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, family
+= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
+summary(model_glm)
+
+model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
+summary(model_beta)
+```
+Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
