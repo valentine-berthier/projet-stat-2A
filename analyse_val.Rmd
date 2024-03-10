@@ -481,9 +481,9 @@ for (pop in levels(J$population)){
   plot<-ggplot(data=J1, aes(x =annee, y = taux_eff,fill=min_max_value))+
     geom_col(width = 0.5) +       # tracer le nombre de cas sous forme de colonnes
     theme_minimal()+                              # simplifier les  arrière-plans
-    labs(x = "annee ",
-      y = "Taux de sensibilité à tous les tests par rapport \n à C3G-R",
-      title = "Taux de sensibilité par population étudiées en fonction de l'année étudiée",
+    labs(x = "Annee ",
+      y = "",
+      title = "Fraction d'isolats bactériens pour lesquels la pan-sensibilité a pu être calculé par année étudiée.",
       caption = str_glue("Cohorte : population de {pop} au niveau National \n Lecture : En moyenne, la perte d'effectif pour la catégorie pan-sensible est de {round(100-moyenne,2)}% "))+
     facet_wrap(~population)+
     scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
