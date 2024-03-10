@@ -296,8 +296,18 @@ boxplot(AMR$population ~ AMR$`valeur AMR`)
 # AMU et AMR
 
 ```{r}
-usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
+
+usage_animal$population <- as.factor(usage_animal$population)
 ```
+
+Des regroupements entre populations ont été effectués dans ce jeu de données. Les regroupements sont : 
+veau, bovin-adulte, bovin-abattoir = Bovins
+chat, chien	= Chats et chiens
+cheval = Chevaux
+volaille, volaille-abattoir	= Volailles
+porc, porc-abattoir = Porcs
+lapin = Lapins
 
 ```{r}
 ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
@@ -311,4 +321,29 @@ ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
 
 Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
-Il faudra utiliser la fonction betar du package mgcv.
+Il faudra utiliser la fonction betareg du package de même nom
+
+```{r}
+# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
+usage_animal <- usage_animal %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+```
+
+Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
+
+```{r}
+library(betareg)
+
+model_glm <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, family
+= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
+summary(model_glm)
+
+model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
+summary(model_beta)
+
+plot(model_glm)
+plot(model_beta)
+```
+Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
+
+Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle de régression bêta. Pour le modèle logit, le qqplot ne suit pas exactement la première bissectrice, il dérive vers la gauche. Il faudra mieux interpréter plus tard mais c'est un début d'interprétation.
