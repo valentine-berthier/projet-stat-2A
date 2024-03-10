@@ -298,6 +298,11 @@ boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```{r}
 usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
 
+# Les valeurs disponibles sur Resana sont celles-ci, il y avait des erreurs dans la prise de note. Est ce qu'on se base sur celles-ci ou sur les autres ?
+usage_animal2 <- usage_animal
+usage_animal2$Valeur_AMU[c(3, 4, 13, 14, 23, 24, 33, 34, 43, 44, 53, 54)] <- c(0.3543760, 0.2397001, 0.7610450,	0.5784761, 0.2234603,	0.1345148, 2.9828881,	2.2689869, 1.0165128, 	0.6565365, 1.0730557, 0.4998320)
+
+
 usage_animal$population <- as.factor(usage_animal$population)
 ```
 
