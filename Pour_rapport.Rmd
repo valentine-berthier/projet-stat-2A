@@ -71,9 +71,11 @@ ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Comparaison des valeurs AMR entre animaux et humains",
+       subtitle = "Comparaison des valeurs Pan-S entre animaux et humains",
        caption = "Note: Chaque ligne de données correspond à une région et une année",
        y = NULL,
        x = "AMR moyen",
+       x = "Valeur Pan-S",
        fill = "Famille")+
   theme_minimal()+
   scale_fill_manual(values = c("#90fc9b", "#4b9c4f", "#fa9c43"))+
