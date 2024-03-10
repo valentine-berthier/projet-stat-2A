@@ -346,6 +346,18 @@ ggplot(data = usage_animal)+
 ```
 Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un intervalle plus petit que 0,1 et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quand à l'hétéroscédasticité de la variable.
 
+```{r}
+# Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
+mu <- mean(usage_animal$`valeur AMR`)
+phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`) - 1
+a <- mu * phi
+b <- (1 - mu) * phi
+
+hist(usage_animal$`valeur AMR`, freq = FALSE, breaks = 30)
+lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+```
+En violet, un échantillon suivant une loi bêta de paramètres renseignés dans ce document : file:///C:/Users/flori/Downloads/v34i02-1.pdf. Peut-être qu'avec ça on peut conclure quant à l'utilisation de la régression bêta mais je n'en suit vraiment pas sûre.
+
 Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
 
 ```{r}
@@ -355,7 +367,7 @@ model_glm <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population
 = binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
 summary(model_glm)
 
-model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
+model_beta <- betareg(data = usage_animal, `valeur AMR` ~ Valeur_AMU + population, link = "logit")
 summary(model_beta)
 
 model_beta <- betareg(data = usage_animal2, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
