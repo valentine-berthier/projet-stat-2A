@@ -23,14 +23,6 @@ summary(AMR)
 #On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 
-#Code pour rajouter les volailles quand on les auras...
-#volaille <- read_excel('donnees/volaille.xlsx')
-#volaille <- volaille[, -c(3,5,6,7)]
-#volaille$famille <- 'animale'
-#volaille$dispositif <- NA
-#volaille$region <- ifelse(volaille$region == 'NA', 'Nationale', volaille$region)
-#AMR <- rbind(AMR, volaille)
-
 
 # Séparation des deux cas d'étude (animal et humain) version Florine
 AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
@@ -94,15 +86,15 @@ La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut fa
 moyenne_AMR$abattoir <- as.integer(grepl("abattoir", moyenne_AMR$population, ignore.case = TRUE))
 
 # Graphique
-ggplot(moyenne_AMR, aes(x = moyenne_AMR, fill = factor(abattoir), y = reorder(population, moyenne_AMR))) +
+ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = factor(abattoir))) +
   geom_bar(stat = "identity", position = "dodge") +
   labs(title = "AMR moyen en fonction du caractère 'abattoir' ou non",
-       x = "AMR moyen",
-       y = "Population",
+       x = "Population",
+       y = "AMR moyen",
        fill = "Abattoir") +
   theme_minimal()
 ```
-Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance aux antibiotiques (sensibilité plus faible)
+Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance (sensibilité plus faible)
 
 Pour poursuivre l'analyse :
 Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
@@ -283,6 +275,10 @@ donnees_remodelees <- AMR_fr %>%
   pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
 donnees_remodelees <- donnees_remodelees %>%
   arrange(annee)
+<<<<<<< HEAD
+
+=======
+>>>>>>> 9c9bbf5656a773f8848a8c41a283d9f12ea36d8b
 ```
 
 On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
@@ -291,99 +287,6 @@ On a fait les corrélations pour les animaux et en France entière, l'objectif s
 
 ```{r}
 boxplot(AMR$population ~ AMR$`valeur AMR`)
-#boxplot(AMR$`valeur AMR`~AMR$population)
 ```
 
-# AMU et AMR
 
-```{r}
-usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
-
-# Les valeurs disponibles sur Resana sont celles-ci, il y avait des erreurs dans la prise de note. Est ce qu'on se base sur celles-ci ou sur les autres ?
-usage_animal2 <- usage_animal
-
-usage_animal2$Valeur_AMU[c(3, 4, 13, 14, 23, 24, 33, 34, 43, 44, 53, 54)] <- c(0.3543760, 0.2397001, 0.7610450,	0.5784761, 0.2234603,	0.1345148, 2.9828881,	2.2689869, 1.0165128, 	0.6565365, 1.0730557, 0.4998320)
-
-# comment as-tu trouvé ces valeurs que tu remplaces ? 
-
-usage_animal2$population <- as.factor(usage_animal$population)
-usage_animal$population <- as.factor(usage_animal$population)
-```
-
-Des regroupements entre populations ont été effectués dans ce jeu de données. Les regroupements sont : 
-veau, bovin-adulte, bovin-abattoir = Bovins
-chat, chien	= Chats et chiens
-cheval = Chevaux
-volaille, volaille-abattoir	= Volailles
-porc, porc-abattoir = Porcs
-lapin = Lapins
-
-```{r}
-ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
-  geom_point()+ 
-  theme_minimal()+                     
-  labs(x = "Sensibilité aux antibiotiques",
-       y = "Usage d'antibiotiques",
-       title = "Taux de sensibilité par population et usage") +
-  facet_wrap(~population, scales = "free")
-
-ggplot(data = usage_animal2, aes(x = `valeur AMR`, y = Valeur_AMU))+
-  geom_point()+ 
-  theme_minimal()+                     
-  labs(x = "Sensibilité aux antibiotiques",
-       y = "Usage d'antibiotiques",
-       title = "Taux de sensibilité par population et usage") +
-  facet_wrap(~population, scales = "free")
-
-```
-Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
-
-Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
-Il faudra utiliser la fonction `betareg` du package de même nom. 
-
-```{r}
-# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
-usage_animal <- usage_animal %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
-
-usage_animal2 <- usage_animal2 %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
-
-```
-
-Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
-
-```{r}
-library(betareg)
-
-model_glm <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, family
-= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
-summary(model_glm)
-
-model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
-summary(model_beta)
-
-
-plot(model_glm)
-plot(model_beta)
-
-# avec usage_animal2
-
-model_glm2 <- glm(data = usage_animal2, `valeur AMR` ~ 0 + Valeur_AMU + population, family
-= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
-summary(model_glm)
-
-model_beta2 <- betareg(data = usage_animal2, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
-summary(model_beta)
-
-
-plot(model_glm2)
-plot(model_beta2)
-
-
-
-
-```
-Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
-
-Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle de régression bêta. Pour le modèle logit, le qqplot ne suit pas exactement la première bissectrice, il dérive vers la gauche. Il faudra mieux interpréter plus tard mais c'est un début d'interprétation.
