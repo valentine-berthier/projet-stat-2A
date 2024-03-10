@@ -12,6 +12,7 @@ library(readxl)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(stringr)
 ```
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
@@ -173,8 +174,8 @@ for (pop in levels(table_join$population)){
     geom_col(width = 0.5) + 
     theme_minimal()+                     
     labs(x = "Annee",
-         y = "Taux de sensibilité à tous les tests par rapport à C3G-R",
-         title = "Taux de sensibilité par population en fonction de l'année",
+         y = "",
+         title = "Fraction d'isolats bactériens pour lesquels la pan-sensibilité a pu être calculée."",
          subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
     facet_wrap(~population)+
     scale_y_continuous(labels = scales::number_format(suffix="%"), limits = c(0,100))+
