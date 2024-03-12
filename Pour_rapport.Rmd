@@ -150,6 +150,82 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
        color = "Population") +
   theme_minimal()
 ```
+## 2 dimension d'étude : Nationale ou Régionale. Laquelle choisir pour quelle famille ? 
+### Famille : Animale
+
+```{r}
+effectifs_totaux_animale<-effectifs_totaux%>%
+  filter(famille==unique(AMR$famille)[1])
+
+ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national)) +
+  geom_col(width = 1, fill = "orange") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population animale en fonction de l'année") +
+  facet_wrap(~population) 
+  
+```
+
+```{r}
+effectifs_totaux_animale<-effectifs_totaux_animale%>%
+  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
+
+
+boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
+  geom_boxplot() +
+  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
+       x = "Groupe",
+       y = "taux d'effectif perdu",
+       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+        
+boxplot_taux
+```
+Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
+
+### Famille : Humaine
+
+
+```{r, echo=FALSE}
+effectifs_totaux_humain<-effectifs_totaux%>%
+  filter(famille==unique(AMR$famille)[2])
+
+ggplot(data=effectifs_totaux_humain, aes(x = annee, y = effectif_total_national)) +
+  geom_col(width = 1, fill = "skyblue") +       # tracer le nombre de cas sous forme de colonnes
+  theme_minimal()+                              # simplifier les  arrière-plans
+  labs(                                         # ajouter  les noms d'axes, titres ... 
+    x = "Année d'étude",
+    y = "Effectif AMR étudié",
+    title = "Effectif total AMR par population humaine en fonction de l'année") +
+  facet_wrap(~population) 
+
+```
+
+```{r,echo=FALSE}
+#barplot(population ~ effectif_total_region, data = effectifs_totaux)
+# ça ne marche pas car on observe plusieurs fois chaque population
+
+effectifs_totaux_humain<-effectifs_totaux_humain%>%
+  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
+
+
+boxplot_taux<-ggplot(effectifs_totaux_humain, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
+  geom_boxplot() +
+  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
+       x = "Population étudiée",
+       y = "taux d'effectif perdu",
+       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,1))
+boxplot_taux
+
+```
+
+La différence entre les effectifs nationaux et régionaux pour les population humaines sont de l'ordre de 1% et constitue donc une part négligeable à l'étude. L'étude au niveau régionale ne constitue donc pas un risque en terme de perte d'information. 
+
+
 
 # VALIDATION DE L'INDICATEUR
 
@@ -201,10 +277,6 @@ table_join<-table_join%>%
 
 # Boxplot pour représenter la variation intra-groupe
 
-boxplot(taux ~ reorder(population, taux), data = table_join,
-        main = "Valeur AMR par population sur la France entière",
-        ylab = "Valeur AMR",
-        xlab = "Population")
 
 boxplot_taux<-ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
   geom_boxplot() +
