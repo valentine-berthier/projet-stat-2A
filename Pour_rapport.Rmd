@@ -6,7 +6,7 @@ output: html_document
 bibliography : projet-stat-2A.bib
 ---
 
-```{r setup, include=FALSE}
+```{r setup,echo=FALSE,include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(tidyr)
@@ -21,7 +21,7 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 
 ## Importation des données
 
-```{r}
+```{r,echo=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
 
 # Données permettant d'étudier la perte d'effectif des pan-sensibles
@@ -33,7 +33,7 @@ AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AM
 
 ## Transformation des jeux de donées
 
-```{r}
+```{r,echo=FALSE}
 AMR_nationale <- AMR %>%
   filter(region == "Nationale")
 AMR_regionale <- AMR %>%
@@ -64,14 +64,14 @@ ResapathFrance_sansSARM <- ResapathFrance%>%
 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
-```{r}
+```{r,echo=FALSE}
 label <- c("Veau", "Lapin", "Poulet", "Porc", "Volaille", "Dinde", "Caprin", "EHPAD", "Veau", "ES-hemoculture", "Ovin", "ES", "Porc", "Ville", "Cheval","Volaille", "Chien", "Bovin", "Chat")
 
 ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille2))+
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Comparaison des valeurs AMR entre animaux et humains",
-       subtitle = "Comparaison des valeurs Pan-S entre animaux et humains",
+       #subtitle = "Comparaison des valeurs Pan-S entre animaux et humains",
        caption = "Note: Chaque ligne de données correspond à une région et une année",
        y = NULL,
        x = "AMR moyen",
@@ -87,7 +87,7 @@ Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont un
 
 # Famille animale
 
-```{r}
+```{r,echo=FALSE}
 moyenne_AMR <- AMR_nationale_animal %>%
   group_by(population, famille, abattoir) %>%
   summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
@@ -119,7 +119,7 @@ ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR)))+
   theme_minimal()
 ```
 
-```{r}
+```{r,echo=FALSE}
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
@@ -150,10 +150,38 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
        color = "Population") +
   theme_minimal()
 ```
+\newline
 ## 2 dimension d'étude : Nationale ou Régionale. Laquelle choisir pour quelle famille ? 
 ### Famille : Animale
+```{r, echo=FALSE, include=FALSE}
+# Effectif totaux étudiés pour chaque année et chaque population indépendamment de la région
+df_region <- AMR %>% 
+  select(annee,population,region,famille,`effectif AMR`)%>%
+  filter(region!="Nationale")%>%
+  group_by(annee,population,famille) %>%
+  summarise(effectif_total_region = sum(`effectif AMR`))
 
-```{r}
+df_region
+
+# Essayons de contraster cela aux effectifs nationaux
+df_national<-AMR %>%
+  select(annee,population,famille,region,`effectif AMR`)%>%
+  filter(region=="Nationale")%>%
+  group_by(annee,population,famille) %>%
+  summarise(effectif_total_national = sum(`effectif AMR`))
+
+df_national
+
+# Joindre les tables en utilisant la fonction dplyr inner_join()
+effectifs_totaux <- inner_join(df_region,df_national,by = c("annee","population","famille"))
+effectifs_totaux<-effectifs_totaux%>%
+mutate(diff_effectif=effectif_total_national-effectif_total_region)
+# En supposant que les effectifs nationaux sont plus grand que ceux régionaux car on comptabiliserait les régions pour lesquelles nous n'étudions pas assez d'individus
+effectifs_totaux
+
+```
+
+```{r,echo=FALSE}
 effectifs_totaux_animale<-effectifs_totaux%>%
   filter(famille==unique(AMR$famille)[1])
 
@@ -168,7 +196,7 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
   
 ```
 
-```{r}
+```{r,echo=FALSE}
 effectifs_totaux_animale<-effectifs_totaux_animale%>%
   mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
 
@@ -233,7 +261,7 @@ La différence entre les effectifs nationaux et régionaux pour les population h
 
 ## L'indicateur est-il basé sur un nombre d'isolats plus faible (significativement ?) que d'autres indicateurs de résistance ?
 
-```{r}
+```{r,echo=FALSE}
 table1 <- ResapathFrance_sansSARM %>%
   filter(`profil AMR` == "pan-sensible") %>%
   mutate(eff_pansensible = `effectif AMR`) %>%
@@ -267,10 +295,10 @@ for (pop in levels(table_join$population)){
   plot(plot)
 }
 ```
-Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
+\newline Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
 Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
 
-```{r}
+```{r,echo=FALSE}
 
 table_join<-table_join%>%
   mutate(taux=(eff_pansensible/eff_C3G)*100)
