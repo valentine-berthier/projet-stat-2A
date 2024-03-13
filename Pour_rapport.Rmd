@@ -193,7 +193,6 @@ Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R sembl
 Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
 
 ```{r}
-
 table_join<-table_join%>%
   mutate(taux=(eff_pansensible/eff_C3G)*100)
 
@@ -204,14 +203,13 @@ boxplot(taux ~ reorder(population, taux), data = table_join,
         ylab = "Valeur AMR",
         xlab = "Population")
 
-boxplot_taux<-ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
+ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
   geom_boxplot() +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité a pu \nêtre calculée au sein de chaque groupe étudié.",
        x = "Groupe",
        y = "taux de représentation",
        caption = str_glue("Cohorte : population animale au niveau National\nLecture : On remarque un taux de calcul plus faible pour les population lapin, Dinde et Poule-poulet"))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))
-
 ```
 
 

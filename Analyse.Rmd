@@ -298,11 +298,10 @@ boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```{r}
 usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
 
-# Les valeurs disponibles sur Resana sont celles-ci, il y avait des erreurs dans la prise de note. Est ce qu'on se base sur celles-ci ou sur les autres ?
-usage_animal2 <- usage_animal
-usage_animal2$Valeur_AMU[c(3, 4, 13, 14, 23, 24, 33, 34, 43, 44, 53, 54)] <- c(0.3543760, 0.2397001, 0.7610450,	0.5784761, 0.2234603,	0.1345148, 2.9828881,	2.2689869, 1.0165128, 	0.6565365, 1.0730557, 0.4998320)
-
 usage_animal$population <- as.factor(usage_animal$population)
+
+usage_animal <- usage_animal %>%
+  arrange(population, -annee)
 ```
 
 Des regroupements entre populations ont été effectués dans ce jeu de données. Les regroupements sont : 
@@ -314,18 +313,25 @@ porc, porc-abattoir = Porcs
 lapin = Lapins
 
 ```{r}
+usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
+
 ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
-  geom_point()+ 
-  theme_minimal()+                     
-  labs(x = "Sensibilité aux antibiotiques",
+  geom_path()+
+  geom_point(aes(colour = path), size = 3)+
+  theme_minimal()+
+  theme(legend.position = "top")+
+  labs(x = "Pan-S",
        y = "Usage d'antibiotiques",
-       title = "Taux de sensibilité par population et usage") +
+       title = "L'usage d'antiotique semble avoir un effet sur la pan-sensibilité des animaux",
+       caption = "Note de lecture : Au début de l'étude, en 2021, les porcs avaient une valeur d'usage de 1 pour une pan-sensibilité d'environ 22.5%",
+       subtitle = "Pan-sensibilité par population animale et usage d'antibiotique",
+       color = "Année du test de Pan-S")+
+  scale_color_manual(values = c("between" = NULL, "Start (2012)" = "green", "End (2021)" = "red"))+
   facet_wrap(~population, scales = "free")
 ```
-Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
 
-Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
-Il faudra utiliser la fonction betareg du package de même nom
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Il faudra utiliser la fonction betareg du package de même nom.
 
 ```{r}
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
@@ -376,6 +382,14 @@ summary(model_beta)
 plot(model_glm)
 plot(model_beta)
 ```
+
 Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
 
 Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle de régression bêta. Pour le modèle logit, le qqplot ne suit pas exactement la première bissectrice, il dérive vers la gauche. Il faudra mieux interpréter plus tard mais c'est un début d'interprétation.
+
+# Séparation en plusieurs modèles de régression bêta (un par population)
+
+```{r}
+
+```
+
