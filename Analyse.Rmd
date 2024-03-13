@@ -352,12 +352,7 @@ ggplot(data = usage_animal2, aes(x = `valeur AMR`, y = Valeur_AMU))+
 ```
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
 
-<<<<<<< HEAD
 Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Il faudra utiliser la fonction betareg du package de même nom.
-=======
-Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques.
-Il faudra utiliser la fonction `betareg` du package de même nom. 
->>>>>>> 1f89f91d53901cb68e21d4d5725540c18cd7b303
 
 ```{r}
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
