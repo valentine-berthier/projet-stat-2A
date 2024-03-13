@@ -352,12 +352,16 @@ Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeu
 
 ```{r}
 # Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
-mu <- mean(usage_animal$`valeur AMR`)
-phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`) - 1
-a <- mu * phi
-b <- (1 - mu) * phi
-hist(usage_animal$`valeur AMR`, freq = FALSE, breaks = 30)
-lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+# Regardons la modélisation d'une loi bêta suivant les valeurs de pan-sensibilité de chaque population
+
+for (pop in unique(usage_animal$population)){
+  mu <- mean(usage_animal$`valeur AMR`[which(usage_animal$population == pop)])
+  phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`[which(usage_animal$population == pop)]) - 1
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  hist(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
+  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+}
 ```
 En violet, un échantillon suivant une loi bêta de paramètres renseignés dans ce documents : https://www.jstatsoft.org/article/view/v034i02. Peut-être qu'avec ça on peut conclure quant à l'utilisation de la régression bêta mais je n'en suit vraiment pas sûre.
 
@@ -389,9 +393,6 @@ summary(model_beta2)
 
 plot(model_glm2)
 plot(model_beta2)
-
-
-
 
 ```
 
