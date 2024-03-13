@@ -377,23 +377,8 @@ summary(model_glm)
 model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
 summary(model_beta)
 
-
 plot(model_glm)
 plot(model_beta)
-
-# avec usage_animal2
-
-model_glm2 <- glm(data = usage_animal2, `valeur AMR` ~ 0 + Valeur_AMU + population, family
-= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
-summary(model_glm2)
-
-model_beta2 <- betareg(data = usage_animal2, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
-summary(model_beta2)
-
-
-plot(model_glm2)
-plot(model_beta2)
-
 ```
 
 Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
@@ -403,6 +388,11 @@ Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle d
 # Séparation en plusieurs modèles de régression bêta (un par population)
 
 ```{r}
-
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ Valeur_AMU, link = "logit")
+  print(pop)
+  print(model_beta$coefficients$mean)
+}
 ```
 
