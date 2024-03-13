@@ -299,17 +299,6 @@ boxplot(AMR$population ~ AMR$`valeur AMR`)
 ```{r}
 usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
 
-<<<<<<< HEAD
-=======
-# Les valeurs disponibles sur Resana sont celles-ci, il y avait des erreurs dans la prise de note. Est ce qu'on se base sur celles-ci ou sur les autres ?
-usage_animal2 <- usage_animal
-
-usage_animal2$Valeur_AMU[c(3, 4, 13, 14, 23, 24, 33, 34, 43, 44, 53, 54)] <- c(0.3543760, 0.2397001, 0.7610450,	0.5784761, 0.2234603,	0.1345148, 2.9828881,	2.2689869, 1.0165128, 	0.6565365, 1.0730557, 0.4998320)
-
-# comment as-tu trouvé ces valeurs que tu remplaces ? 
-
-usage_animal2$population <- as.factor(usage_animal$population)
->>>>>>> 1f89f91d53901cb68e21d4d5725540c18cd7b303
 usage_animal$population <- as.factor(usage_animal$population)
 
 usage_animal <- usage_animal %>%
@@ -340,15 +329,6 @@ ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
        color = "Année du test de Pan-S")+
   scale_color_manual(values = c("between" = NULL, "Start (2012)" = "green", "End (2021)" = "red"))+
   facet_wrap(~population, scales = "free")
-
-ggplot(data = usage_animal2, aes(x = `valeur AMR`, y = Valeur_AMU))+
-  geom_point()+ 
-  theme_minimal()+                     
-  labs(x = "Sensibilité aux antibiotiques",
-       y = "Usage d'antibiotiques",
-       title = "Taux de sensibilité par population et usage") +
-  facet_wrap(~population, scales = "free")
-
 ```
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
 
@@ -358,11 +338,28 @@ Une regression bêta est privilégiée car on analyse la proportion d'animaux se
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
   mutate(`valeur AMR` = `valeur AMR`*0.01)
-
-usage_animal2 <- usage_animal2 %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
-
 ```
+
+```{r}
+# On vérifie que les données AMR sont hétéroscédastiques 
+ggplot(data = usage_animal)+
+  geom_boxplot(aes(x = `valeur AMR`, y = population))+
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
+  theme_minimal()+
+  labs(title = "Dispertion des valeurs AMR")
+```
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un intervalle plus petit que 0,1 et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quand à l'hétéroscédasticité de la variable.
+
+```{r}
+# Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
+mu <- mean(usage_animal$`valeur AMR`)
+phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`) - 1
+a <- mu * phi
+b <- (1 - mu) * phi
+hist(usage_animal$`valeur AMR`, freq = FALSE, breaks = 30)
+lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+```
+En violet, un échantillon suivant une loi bêta de paramètres renseignés dans ce documents : https://www.jstatsoft.org/article/view/v034i02. Peut-être qu'avec ça on peut conclure quant à l'utilisation de la régression bêta mais je n'en suit vraiment pas sûre.
 
 Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
 
