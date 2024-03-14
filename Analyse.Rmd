@@ -161,7 +161,7 @@ Variance intra-groupe volatile en fonction des populations --> d'où vient cette
 Pour poursuivre l'analyse :
 Similarités entre les population possédant des variances intra proches ? (par exemple les populations en abattoir vs les autres)
 
-# EVOLUTION DE L'AMR EN FONCTION DES ANNEES
+## EVOLUTION DE L'AMR EN FONCTION DES ANNEES
 ```{r}
 # Graphique général (peu lisible)
 ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -201,6 +201,65 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
   theme_minimal()
 ```
 On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
+
+# TEST DE TENDANCE 
+```{r}
+#Testons le résultat précédent :
+library(lmtest)
+library(sandwich)
+
+# Diviser les données en sous-groupes en fonction de la variable de population
+sous_groupes <- split(AMR_animale_fr, AMR_animale_fr$population)
+
+# Réaliser un test de tendance pour chaque sous-groupe
+resultats_test_tendance <- lapply(sous_groupes, function(sous_groupe) {
+  modele <- lm(`valeur AMR` ~ annee, data = sous_groupe)
+  test_tendance <- coeftest(modele, vcov = vcovHC)
+  return(test_tendance)
+})
+
+resultats_test_tendance
+
+# Pour les humains
+sous_groupes_humain <- split(AMR_humaine_fr, AMR_humaine_fr$population)
+
+resultats_test_tendance_humain <- lapply(sous_groupes_humain, function(sous_groupe) {
+  modele <- lm(`valeur AMR` ~ annee, data = sous_groupe)
+  test_tendance <- coeftest(modele, vcov = vcovHC)
+  return(test_tendance)
+})
+
+resultats_test_tendance_humain
+
+################# McNemar
+# Un test de McNemar ne s'effectue que sur 2 proportions, hors ici nous possédons plus de 2 années par population. De plus, ne prendre que l'année de départ et d'arrivée omettrait les informations contenues dans les autres années ce qui créérait du biais.
+# Nous allons donc réaliser un modèle linéaire généralisé à effet mixte.
+library(lme4)
+# Liste pour stocker les résumés des modèles GLM pour chaque population
+liste_resumes_modeles_glm <- list()
+
+# Boucle pour ajuster un modèle GLM pour chaque population et stocker les résumés
+for (pop in unique(AMR_animale_fr$population)) {
+  # Sous-ensemble des données pour la population actuelle
+  donnees_population <- subset(AMR_animale_fr, population == pop)
+  
+  # Ajuster un modèle GLM pour la population actuelle
+  modele_glm <- glm(`valeur AMR` ~ annee, family = Gamma(link = "log"), data = donnees_population)
+  
+  # Obtenir le résumé du modèle
+  resume_modele <- summary(modele_glm)
+  
+  # Stocker le résumé dans la liste
+  liste_resumes_modeles_glm[[pop]] <- resume_modele
+}
+
+# Afficher les résultats des tests pour chaque population
+for (i in seq_along(liste_resumes_modeles_glm)) {
+  cat("Population:", names(liste_resumes_modeles_glm)[i], "\n")
+  print(liste_resumes_modeles_glm[[i]])
+  cat("\n")
+}
+```
 
 # CORRELATIONS
 ```{r}
@@ -356,7 +415,7 @@ Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeu
 
 for (pop in unique(usage_animal$population)){
   mu <- mean(usage_animal$`valeur AMR`[which(usage_animal$population == pop)])
-  phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`[which(usage_animal$population == pop)]) - 1
+  phi <- (mu * (1 - mu)) / var(usage_animal$`valeur AMR`[which(usage_animal$population == pop)]) - 1
   a <- mu * phi
   b <- (1 - mu) * phi
   hist(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
