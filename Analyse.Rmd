@@ -205,6 +205,7 @@ On note une tendance croissante de l'AMR en fonction des années pour les popula
 # TEST DE TENDANCE (FAUX)
 ```{r}
 #Testons le résultat précédent :
+"""
 library(lmtest)
 library(sandwich)
 
@@ -242,9 +243,11 @@ liste_resumes_modeles_glm <- list()
 for (pop in unique(AMR_animale_fr$population)) {
   # Sous-ensemble des données pour la population actuelle
   donnees_population <- subset(AMR_animale_fr, population == pop)
-  
+"""
+
   # Ajuster un modèle GLM pour la population actuelle
-  modele_glm <- glm(`valeur AMR` ~ annee, family = Gamma(link = "log"), data = donnees_population)
+'''  
+modele_glm <- glm(`valeur AMR` ~ annee, family = Gamma(link = "log"), data = donnees_population)
   
   # Obtenir le résumé du modèle
   resume_modele <- summary(modele_glm)
@@ -254,7 +257,7 @@ for (pop in unique(AMR_animale_fr$population)) {
 }
 
 # Afficher les résultats des tests pour chaque population
-'''for (i in seq_along(liste_resumes_modeles_glm)) {
+for (i in seq_along(liste_resumes_modeles_glm)) {
   cat("Population:", names(liste_resumes_modeles_glm)[i], "\n")
   print(liste_resumes_modeles_glm[[i]])
   cat("\n")
