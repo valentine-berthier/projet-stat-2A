@@ -202,7 +202,7 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
 ```
 On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
 
-# TEST DE TENDANCE 
+# TEST DE TENDANCE (FAUX)
 ```{r}
 #Testons le résultat précédent :
 library(lmtest)
@@ -218,7 +218,7 @@ resultats_test_tendance <- lapply(sous_groupes, function(sous_groupe) {
   return(test_tendance)
 })
 
-resultats_test_tendance
+#resultats_test_tendance
 
 # Pour les humains
 sous_groupes_humain <- split(AMR_humaine_fr, AMR_humaine_fr$population)
@@ -229,7 +229,7 @@ resultats_test_tendance_humain <- lapply(sous_groupes_humain, function(sous_grou
   return(test_tendance)
 })
 
-resultats_test_tendance_humain
+#resultats_test_tendance_humain
 
 ################# McNemar
 # Un test de McNemar ne s'effectue que sur 2 proportions, hors ici nous possédons plus de 2 années par population. De plus, ne prendre que l'année de départ et d'arrivée omettrait les informations contenues dans les autres années ce qui créérait du biais.
@@ -254,11 +254,12 @@ for (pop in unique(AMR_animale_fr$population)) {
 }
 
 # Afficher les résultats des tests pour chaque population
-for (i in seq_along(liste_resumes_modeles_glm)) {
+'''for (i in seq_along(liste_resumes_modeles_glm)) {
   cat("Population:", names(liste_resumes_modeles_glm)[i], "\n")
   print(liste_resumes_modeles_glm[[i]])
   cat("\n")
-}
+}'''
+
 ```
 
 # CORRELATIONS
