@@ -232,7 +232,7 @@ resultats_test_tendance_humain <- lapply(sous_groupes_humain, function(sous_grou
 
 #resultats_test_tendance_humain
 
-################# McNemar
+################# Modèle linéaire généralisé à effets mixtes
 # Un test de McNemar ne s'effectue que sur 2 proportions, hors ici nous possédons plus de 2 années par population. De plus, ne prendre que l'année de départ et d'arrivée omettrait les informations contenues dans les autres années ce qui créérait du biais.
 # Nous allons donc réaliser un modèle linéaire généralisé à effet mixte.
 library(lme4)
@@ -262,6 +262,58 @@ for (i in seq_along(liste_resumes_modeles_glm)) {
   print(liste_resumes_modeles_glm[[i]])
   cat("\n")
 }'''
+
+############### COCHRAN ARMITAGE
+# Chargement des bibliothèques
+library(dplyr)
+library(DescTools)
+
+# Définir la fonction pour effectuer le test pour une modalité donnée
+perform_CochranArmitageTest <- function(data, population_modalite) {
+  # Filtrer les données pour la modalité spécifiée
+  matrice <- data %>% filter(population == population_modalite)
+  
+  # Calculer les valeurs Pan-sensible et Non Pan-sensible pour chaque année
+  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR` * `effectif AMR` / 100,
+                                 non_pan_sensible = `effectif AMR` - pan_sensible)
+  
+  # Ordonner par année
+  matrice <- matrice[order(matrice$annee), ]
+  
+  # Sélectionner les colonnes pertinentes
+  matrice <- matrice[, c("annee", "pan_sensible", "non_pan_sensible")]
+  
+  # Transposer la matrice et nommer les colonnes avec les années
+  matrice <- t(matrice)
+  colnames(matrice) <- as.character(matrice[1, ])
+  matrice <- matrice[-1, ]
+  
+  # Convertir les années en numérique
+  colnames(matrice) <- as.numeric(colnames(matrice))
+  
+  # Afficher le résultat du test de Cochran-Armitage
+  cat("Résultats pour la modalité", population_modalite, ":\n")
+  print(CochranArmitageTest(matrice))
+}
+
+# Appliquer la fonction pour chaque modalité de population
+modalites_population <- c("ville", "ES-hemoculture", "ES", "EHPAD")
+for (modalite in modalites_population) {
+  perform_CochranArmitageTest(AMR_humaine_fr, modalite)
+}
+
+### pour les animaux :
+# Définir les modalités de population pour AMR_animale_fr
+modalites_population_animale <- unique(AMR_animale_fr$population)
+
+# Créer une liste pour stocker les résultats des tests
+resultats_tests <- list()
+
+# Boucle sur les modalités de population animale
+for (modalite in modalites_population_animale) {
+  resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
+}
+
 
 ```
 
