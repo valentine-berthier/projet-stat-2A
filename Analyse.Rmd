@@ -202,7 +202,7 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
 ```
 On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
 
-# TEST DE TENDANCE (FAUX)
+# TEST DE TENDANCE
 ```{r}
 ############### COCHRAN ARMITAGE
 # Chargement des bibliothèques
