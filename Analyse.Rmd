@@ -254,8 +254,6 @@ resultats_tests <- list()
 for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
 }
-
-
 ```
 
 # CORRELATIONS
@@ -342,6 +340,26 @@ donnees_remodelees <- donnees_remodelees %>%
 ```
 
 On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
+
+Les régions n'ayant pas plus de 30 souches sont elles assez peu nombreuses parmi le total de souche ? --> si on analyse par région plutôt que la totalité, la perte d'information est-elle significativement "petite" ?
+```{r}
+effectif_national <- AMR %>%
+  filter(region == "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_national = sum(`effectif AMR`), .by = c(annee, population))
+
+AMR_regionale <- AMR[which(AMR$region != "Nationale"),]
+
+effectif_regional <- aggregate(AMR_regionale$`effectif AMR`, by = list(AMR_regionale$annee, AMR_regionale$population), FUN = sum)
+colnames(effectif_regional) <- c("annee", "population", "effectif_regional")
+
+AMR_perte_regionale <- inner_join(AMR_perte_regionale, effectif_regional)
+
+for (pop in unique(AMR_perte_regionale$population)){
+  ggplot(AMR_perte_regionale)
+}
+```
+
 
 ## Les situations et variables sont-eles contrastées ?
 
