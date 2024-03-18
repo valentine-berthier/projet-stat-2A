@@ -415,16 +415,32 @@ effectif_regional <- AMR %>%
 AMR_perte_regionale <- full_join(effectif_national, effectif_regional)
 
 AMR_perte_regionale <- AMR_perte_regionale %>%
-  mutate(perte = effectif_regional/effectif_national) %>%
-  select(annee, population, perte)
+  mutate(perte = 1 - effectif_regional/effectif_national) %>%
+  filter(!is.na(perte))
 
-for (pop in unique(AMR_perte_regionale$population)){
-  ggplot(AMR_perte_regionale, aes(x = annee, y = perte, , group = population, color = population))+
-    geom_line(stat = "summary", fun = "mean") +
-    geom_point(stat = "summary", fun = "mean", size = 2)
-}
+ggplot(AMR_perte_regionale, aes(x = annee, y = perte))+
+  geom_bar(stat = "identity", position = "dodge")+
+  theme_minimal()+
+  labs(title = "Perte d'effectif dû au nombre de souches trop faible par région", 
+       subtitle = "La perte est exprimée en pourcentage : 1 - effectif régional / effectif national", 
+       y = "Perte", 
+       x = NULL,
+       caption = "Note de lecture : En 2012, 75% des données régionales provenaient de régions ayant analysé moins de 30 souches de porcs.")+
+  scale_y_continuous(labels = scales::label_percent(scale = 100))+
+  facet_wrap(~reorder(population, -perte, FUN = mean))
 ```
 
+On va maintenant tester si la perte est significativement faible. Pour cela, on utilise un test de proportion qui va comparer la perte au seuil de 10% (valeur arbitraire). Peut-être qu'il faudra faire un test par population ?
+
+```{r}
+for (pop in unique(AMR_perte_regionale$population)){
+  donnees <- AMR_perte_regionale$perte[which(AMR_perte_regionale$population == pop)]
+  print(pop)
+  print(prop.test(sum(donnees), length(donnees), p = 0.3, alternative = "less")$p.value) # Perte significativement plus faible que 10 %
+}
+```
+problème !! Il y a plus de données régionales que nationales pour les données humaines (et notamment les ES-hemoculture), comment cela est possible ? 
+Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ??
 
 ## Les situations et variables sont-eles contrastées ?
 
