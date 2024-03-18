@@ -407,15 +407,21 @@ effectif_national <- AMR %>%
   select(annee, population, `effectif AMR`) %>%
   summarise(effectif_national = sum(`effectif AMR`), .by = c(annee, population))
 
-AMR_regionale <- AMR[which(AMR$region != "Nationale"),]
+effectif_regional <- AMR %>%
+  filter(region != "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_regional = sum(`effectif AMR`), .by = c(annee, population))
 
-effectif_regional <- aggregate(AMR_regionale$`effectif AMR`, by = list(AMR_regionale$annee, AMR_regionale$population), FUN = sum)
-colnames(effectif_regional) <- c("annee", "population", "effectif_regional")
+AMR_perte_regionale <- full_join(effectif_national, effectif_regional)
 
-AMR_perte_regionale <- inner_join(AMR_perte_regionale, effectif_regional)
+AMR_perte_regionale <- AMR_perte_regionale %>%
+  mutate(perte = effectif_regional/effectif_national) %>%
+  select(annee, population, perte)
 
 for (pop in unique(AMR_perte_regionale$population)){
-  ggplot(AMR_perte_regionale)
+  ggplot(AMR_perte_regionale, aes(x = annee, y = perte, , group = population, color = population))+
+    geom_line(stat = "summary", fun = "mean") +
+    geom_point(stat = "summary", fun = "mean", size = 2)
 }
 ```
 
