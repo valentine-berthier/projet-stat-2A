@@ -1,0 +1,303 @@
+---
+title: "Analyse descriptive"
+author: "Groupe 25"
+date: "2024-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+```
+
+# CHARGEMENT DES DONNEES
+```{r}
+rm(list=ls())
+
+AMR <- read_excel('donnees/donnees_AMR.xlsx')
+str(AMR)
+summary(AMR)
+
+#On renomme "bovin-abattoir" en "veau-abattoir"
+AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
+
+
+# Séparation des deux cas d'étude (animal et humain) version Florine
+AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
+AMR_animale <- AMR[which(AMR$famille=='animale'),]
+
+# Séparation des deux cas d'étude (animal et humain) version Maël
+AMR_animale <- AMR %>%
+  filter(famille == "animale")
+AMR_humaine <- AMR %>%
+  filter(famille == "humaine")
+
+# Récupération des données nationales uniquement
+AMR_animale_fr <- AMR_animale[which(AMR_animale$region=='Nationale'),]
+AMR_humaine_fr <- AMR_humaine[which(AMR_humaine$region=='Nationale'),]
+
+# Création d'une indicatrice selon si la population provient d'un abattoir (1) ou non (0)
+AMR_animale_fr$abattoir <- as.integer(grepl("abattoir", AMR_animale_fr$population, ignore.case = TRUE))
+```
+Attention ! On ne possède pas de données nationales pour les populations suivantes :
+Ovin, Caprin, volaille
+--> faire une moyenne avec les régions disponibles ? Problème : trouver comment les valeurs nationales ont-été trouvées.
+
+# VARIATIONS INTER-GROUPES
+```{r}
+# Pour les animaux, on regarde la moyenne de l'AMR pour chaque population
+moyenne_AMR <- AMR_animale_fr %>%
+  group_by(population, famille) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`))
+
+# On regarde la variance inter-groupe (et l'écart-type car plus parlant)
+AMR_animale_fr %>% summarize(ecart_type_AMR = sd(`valeur AMR`))
+AMR_animale_fr	 %>%
+  group_by(population, famille) %>%
+  summarize(
+    moyenne_AMR = mean(`valeur AMR`),
+    .groups = 'drop'
+  ) %>%
+  ungroup() %>%
+  summarize(
+    SSB = sum((moyenne_AMR - mean(moyenne_AMR))^2 * n())
+  )
+
+# Plot des moyennes (agrandir le graphique pour la lisibilité)
+ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = famille)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Moyenne de l'AMR par population",
+       x = "Population",
+       y = "Moyenne de l'AMR") +
+  theme_minimal()
+```
+Variation inter-groupes plutôt importante chez les animaux : de 13,80 pour la population veau, à 65,30 pour la population bovin-adulte (Remarque : étonnant que les 2 soient aussi éloignés...) et écart-type de 17.86663. Variance inter-groupe de 49298.88.
+Similarité entre les populations possédant des moyennes proches ? (chat et chien qui vivent plus en solitaires --> moyenne parmis les plus élevées) Un peu trop abstrait car c'est à nous de déterminer les populations qui vivent plus en solitaire ou en groupe --> pas objectif d'un pdv statistique.
+
+
+Pour poursuivre l'analyse :
+La région influe-t-elle sur la moyenne et la variabilité ? (Si oui, on peut faire une carte de la sensibilité en France)
+
+# COMPARAISON DES POPULATIONS EN ABATTOIR OU NON
+```{r}
+# Création d'une indicatrice selon si la population provient d'un abattoir (1) ou non (0)
+moyenne_AMR$abattoir <- as.integer(grepl("abattoir", moyenne_AMR$population, ignore.case = TRUE))
+
+# Graphique
+ggplot(moyenne_AMR, aes(x = reorder(population, moyenne_AMR), y = moyenne_AMR, fill = factor(abattoir))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "AMR moyen en fonction du caractère 'abattoir' ou non",
+       x = "Population",
+       y = "AMR moyen",
+       fill = "Abattoir") +
+  theme_minimal()
+```
+Les populations en abattoir possèdent des moyennes sensiblement différentes des autres populations. Dans 4 cas sur 5, la moyenne de l'AMR est plus faible pour les populations en abattoir (sauf pour le porc, dû au fait que les porcs en abattoir viennent tous de Bretagne --> sensibilité plus élevées en Bretagne ?), ce qui s'explique par la proximité entre les individus --> meilleur transmission de bactéries --> meilleur résistance (sensibilité plus faible)
+
+Pour poursuivre l'analyse :
+Existe-t-il un biais dû à la région (abattoir dans des régions ou l'AMR est plus faible initialement ?) ? --> regarder la moyenne de Bretagne par rapport aux moyennes des autres régions. Attention ! Comparer sur les mêmes populations (sinon biais)
+
+# SIGNIFICATIVITE 
+```{r}
+# Regression linéaire
+modele_regression <- lm(`valeur AMR` ~ population, data = AMR_animale_fr)
+summary(modele_regression)
+```
+Pour valider l'intéprétation des différentes populations, on effectue une regression linéaire sur celles-ci. 
+
+# ANALYSE DES REGIONS
+```{r}
+
+moyenne_par_region <- AMR_animale %>%
+  group_by(region) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
+
+ggplot(AMR_animale, aes(x = region, y = `valeur AMR`)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par région",
+       x = "Région",
+       y = "Valeur de l'AMR") +
+  theme_minimal()
+
+moyenne_par_region_population <- AMR_animale %>%
+  group_by(region, population) %>%
+  summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
+
+modele_anova <- aov(moyenne_AMR ~ region + population, data = moyenne_par_region_population)
+summary(modele_anova)
+
+# je n'arrive pas à réaliser l'analyse que je veux :()
+```
+
+
+# VARIATIONS INTRA-GROUPES
+```{r}
+AMR_animale_fr %>%
+  group_by(population, famille) %>%
+  summarize(
+    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
+    .groups = 'drop'
+  )
+
+# Boxplot pour représenter la variation intra-groupe
+boxplot(`valeur AMR` ~ reorder(population, `valeur AMR`), data = AMR_animale_fr,
+        main = "Valeur AMR par population sur la France entière",
+        ylab = "Valeur AMR",
+        xlab = "Population")
+```
+Variance intra-groupe volatile en fonction des populations --> d'où vient cette variabilité ? Est-ce une tendance par années (croissante/décroissante) ou un phénomène aléatoire ? (réponse plus bas, spoiler c'est pas une tendance)
+
+
+Pour poursuivre l'analyse :
+Similarités entre les population possédant des variances intra proches ? (par exemple les populations en abattoir vs les autres)
+
+# EVOLUTION DE L'AMR EN FONCTION DES ANNEES
+```{r}
+# Graphique général (peu lisible)
+ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+
+# On filtre les données pour inclure uniquement les populations en abattoir ou non
+AMR_animale_fr_abattoir <- AMR_animale_fr %>%
+  filter(grepl("abattoir", population, ignore.case = TRUE))
+
+AMR_animale_fr_horsabattoir <- AMR_animale_fr %>%
+  filter(!grepl("abattoir", population, ignore.case = TRUE))
+
+# Graphique abattoir
+ggplot(AMR_animale_fr_abattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+
+# Graphique hors abattoir
+ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+```
+On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
+
+# CORRELATIONS
+```{r}
+library(tidyr)
+
+donnees_remodelees <- AMR_animale_fr %>%
+  pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
+
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
+
+matrice_correlations <- cor(donnees_remodelees[, -1], use = "pairwise.complete.obs")
+library(corrplot)
+
+# Afficher le corrplot
+corrplot(matrice_correlations, method = "color", addrect = 2, addCoef.col = "black")
+```
+
+# VISUALISATION DE DONNEES (HUMAIN)
+```{r}
+boxplot(AMR_humaine_fr$`valeur AMR`~AMR_humaine_fr$population,
+        main = "Valeur AMR par population sur la France entière",
+        ylab = "Valuer AMR",
+        xlab = "Population")
+```
+Valeurs de l'AMR plus élevées en ville qu'en EHPAD et Etablissements de santé --> l'AMR mesure bien la sensibilité des bactéries aux antibiotiques (et pas la résistance).
+
+```{r}
+ggplot(AMR_humaine_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations humaines sur la France entière",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+```
+
+# VALIDATION DE L'INDICATEUR
+
+## Indicateur existant pour toutes les caractéristiques ?
+
+Caractéristiques de population, famille, dispositif, année et région
+```{r}
+summary(AMR)
+AMR$dispositif <- as.factor(AMR$dispositif)
+AMR$population <- as.factor(AMR$population)
+AMR$famille <- as.factor(AMR$famille)
+AMR$region <- as.factor(AMR$region)
+```
+Effectif AMR: nombre de souches testées
+
+S'il y a moins de 30 souches testées (en pratique on descend jusque 29), les valeurs ne sont pas récupérées, cela ne semble pas un échantillon assez représentatif de la réalité dans ces cas là. 
+
+Les dispositifs se concentrent sur une seule population, par exemple Medqual-Ville ne récupère que les valeurs AMR pour la population humaine (en ville).
+
+```{r}
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$annee), FUN = sum)
+aggregate(x = AMR$`effectif AMR`, by = list(AMR$region), FUN = sum)
+```
+On a de plus en plus de souches testées au fil des années. On peut supposer l'indicateur existant à long terme pour toutes les caractéristiques.
+
+Des souches sont testées pour toutes les régions métropolitaines (en plus de trois territoires d'outre-mer). On peut se douter que pour chaque région, ce ne sont pas forcément toutes les familles testées, effectivement il est possible qu'il n'y ai pas 30 cheveaux testés en une année dans une région particulière.
+
+L'indicateur est suffisament existant pour toutes les catégories de sorte à valider ce point.
+
+```{r}
+# Quels regroupements en des sous-populations ?
+# Recherche de liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR)
+
+ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+  geom_boxplot()
+
+# Idée : transformer le tableau de données pour faire des corrélations entre toutes les populations ( on le fait sur les données nationales)
+
+# Transposition de la matrice
+library(tidyr)
+AMR_fr <- AMR[which(AMR$region=="Nationale"),]
+donnees_remodelees <- AMR_fr %>%
+  pivot_wider(names_from = population, values_from = `valeur AMR`, names_prefix = "", values_fill = NA, id_cols = annee)
+donnees_remodelees <- donnees_remodelees %>%
+  arrange(annee)
+```
+
+On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
+
+## Les situations et variables sont-eles contrastées ?
+
+```{r}
+boxplot(AMR$population ~ AMR$`valeur AMR`)
+```
+
+# AMU et AMR
+
+```{r}
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx")
+```
+
+```{r}
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
+  geom_point()+ 
+  theme_minimal()+                     
+  labs(x = "Résistance aux antibiotiques",
+       y = "Usage d'antibiotiques",
+       title = "Taux de sensibilité par population et usage") +
+  facet_wrap(~population, scales = "free")
+```
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine.
