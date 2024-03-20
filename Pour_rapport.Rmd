@@ -310,12 +310,7 @@ for (pop in levels(table_join$population)){
 \newline Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
 Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
 
-<<<<<<< HEAD
-```{r}
-=======
 ```{r,echo=FALSE}
-
->>>>>>> 1f89f91d53901cb68e21d4d5725540c18cd7b303
 table_join<-table_join%>%
   mutate(taux=(eff_pansensible/eff_C3G)*100)
 
@@ -334,5 +329,99 @@ ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
 
 ## Les situations et les variables disponibles sont assez contrastées ?
 
+## IDENTIFICATION DE TENDANCES
+### Evolution de l'AMR en fonction des années
+```{r}
+# Graphique général (peu lisible)
+ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+
+# On filtre les données pour inclure uniquement les populations en abattoir ou non
+AMR_animale_fr_abattoir <- AMR_animale_fr %>%
+  filter(grepl("abattoir", population, ignore.case = TRUE))
+
+AMR_animale_fr_horsabattoir <- AMR_animale_fr %>%
+  filter(!grepl("abattoir", population, ignore.case = TRUE))
+
+# Graphique abattoir
+ggplot(AMR_animale_fr_abattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+
+# Graphique hors abattoir
+ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
+       x = "Année",
+       y = "Moyenne de l'AMR",
+       color = "Population") +
+  theme_minimal()
+```
+
+# Tests de tendance
+```{r}
+############### COCHRAN ARMITAGE
+# Chargement des bibliothèques
+library(dplyr)
+library(DescTools)
+
+# Définir la fonction pour effectuer le test pour une modalité donnée
+perform_CochranArmitageTest <- function(data, population_modalite) {
+  # Filtrer les données pour la modalité spécifiée
+  matrice <- data %>% filter(population == population_modalite)
+  
+  # Calculer les valeurs Pan-sensible et Non Pan-sensible pour chaque année
+  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR` * `effectif AMR` / 100,
+                                 non_pan_sensible = `effectif AMR` - pan_sensible)
+  
+  # Ordonner par année
+  matrice <- matrice[order(matrice$annee), ]
+  
+  # Sélectionner les colonnes pertinentes
+  matrice <- matrice[, c("annee", "pan_sensible", "non_pan_sensible")]
+  
+  # Transposer la matrice et nommer les colonnes avec les années
+  matrice <- t(matrice)
+  colnames(matrice) <- as.character(matrice[1, ])
+  matrice <- matrice[-1, ]
+  
+  # Convertir les années en numérique
+  colnames(matrice) <- as.numeric(colnames(matrice))
+  
+  # Afficher le résultat du test de Cochran-Armitage
+  cat("Résultats pour la modalité", population_modalite, ":\n")
+  print(CochranArmitageTest(matrice))
+}
+
+# Appliquer la fonction pour chaque modalité de population
+modalites_population <- c("ville", "ES-hemoculture", "ES", "EHPAD")
+for (modalite in modalites_population) {
+  perform_CochranArmitageTest(AMR_humaine_fr, modalite)
+}
+
+### pour les animaux :
+# Définir les modalités de population pour AMR_animale_fr
+modalites_population_animale <- unique(AMR_animale_fr$population)
+
+# Créer une liste pour stocker les résultats des tests
+resultats_tests <- list()
+
+# Boucle sur les modalités de population animale
+for (modalite in modalites_population_animale) {
+  resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
+}
+```
 
 ## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
