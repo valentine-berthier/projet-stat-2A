@@ -31,7 +31,7 @@ ResapathFrance <- read_xlsx("donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 ```
 
-## Transformation des jeux de donées
+## Transformation des jeux de données
 
 ```{r,echo=FALSE}
 AMR_nationale <- AMR %>%
@@ -211,18 +211,22 @@ ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national
 ```{r,echo=FALSE}
 effectifs_totaux_animale<-effectifs_totaux_animale%>%
   mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
+  
+effectifs_totaux_animale$abattoir <- grepl("abattoir", effectifs_totaux_animale$population, ignore.case = TRUE)
+  
+label <- c("Chien", "Veau", "Chat", "Bovin", "Cheval", "Volaille-abattoir", "Dinde-abattoir", "Lapin", "Porc", "Porc-abattoir", "Poulet-abattoir", "Veau-abattoir")
 
-
-boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
+ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
   geom_boxplot() +
-  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
-       x = "Groupe",
-       y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
+  geom_hline(yintercept = mean(effectifs_totaux_animale$taux_eff_perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
+  labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
+       x = NULL,
+       y = "Taux d'effectif perdu",
+       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 12.5% pour la population des chats."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-        
-boxplot_taux
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_x_discrete(labels = label)+
+  annotate("text", x = 11, y = 20, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)
 ```
 Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
 
@@ -310,20 +314,28 @@ for (pop in levels(table_join$population)){
 \newline Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
 Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
 
+<<<<<<< HEAD
+```{r}
+=======
 ```{r,echo=FALSE}
+>>>>>>> 4e853533e0fe7f18b328807c3a6105b455610fe0
 table_join<-table_join%>%
   mutate(taux=(eff_pansensible/eff_C3G)*100)
 
+label <- c("Lapin", "Dinde", "Poulet", "Porc", "Bovin", "Cheval", "Chien", "Chat", "Veau")
+
 # Boxplot pour représenter la variation intra-groupe
 
-
-ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
+ggplot(table_join, aes(x = reorder(population, taux), y = 100-taux)) +
   geom_boxplot() +
-  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité a pu \nêtre calculée au sein de chaque groupe étudié.",
-       x = "Groupe",
-       y = "taux de représentation",
-       caption = str_glue("Cohorte : population animale au niveau National\nLecture : On remarque un taux de calcul plus faible pour les population lapin, Dinde et Poule-poulet"))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))
+  geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
+  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque groupe étudié",
+       x = NULL,
+       y = "Taux de perte",
+       caption = str_glue("Cohorte : population animale au niveau National\nLecture : En moyenne, 87 % des animaux étudiés ont un profil de résistance pan-sensible."))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+  scale_x_discrete(labels = label)+
+  annotate("text", x = 8, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
 
 
