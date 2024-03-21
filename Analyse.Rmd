@@ -427,7 +427,7 @@ data_anova %>% levene_test(`valeur AMR` ~ region)
 La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
 F : variance.inter.groups/variance.intra.groups.
 
-# AMU et AMR
+### AMU et AMR
 
 ```{r}
 usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
@@ -529,3 +529,19 @@ for (pop in unique(usage_animal$population)){
 }
 ```
 
+# modèle de panel
+```{r}
+# Charger le package nécessaire pour les modèles linéaires mixtes
+library(lme4)
+
+# On utilise un modèle linéaire mixte étant donné qu'on a une variable continue.
+modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal, control=lmerControl(optimizer="bobyqa"))
+
+modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal)
+
+# Afficher un résumé des résultats du modèle
+summary(modele_panel)
+
+shapiro_test(residuals(modele_panel))
+```
+Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
