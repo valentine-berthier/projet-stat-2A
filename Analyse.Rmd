@@ -161,7 +161,7 @@ Variance intra-groupe volatile en fonction des populations --> d'où vient cette
 Pour poursuivre l'analyse :
 Similarités entre les population possédant des variances intra proches ? (par exemple les populations en abattoir vs les autres)
 
-# EVOLUTION DE L'AMR EN FONCTION DES ANNEES
+## EVOLUTION DE L'AMR EN FONCTION DES ANNEES
 ```{r}
 # Graphique général (peu lisible)
 ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -201,6 +201,60 @@ ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = pop
   theme_minimal()
 ```
 On note une tendance croissante de l'AMR en fonction des années pour les populations en abattoir. Pour les autres populations, la tendance est beaucoup moins claire --> la variation intra n'est donc pas dûe à une tendance croissante (ou décroissante) mais à un autre facteur !
+
+# TEST DE TENDANCE
+```{r}
+############### COCHRAN ARMITAGE
+# Chargement des bibliothèques
+library(dplyr)
+library(DescTools)
+
+# Définir la fonction pour effectuer le test pour une modalité donnée
+perform_CochranArmitageTest <- function(data, population_modalite) {
+  # Filtrer les données pour la modalité spécifiée
+  matrice <- data %>% filter(population == population_modalite)
+  
+  # Calculer les valeurs Pan-sensible et Non Pan-sensible pour chaque année
+  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR` * `effectif AMR` / 100,
+                                 non_pan_sensible = `effectif AMR` - pan_sensible)
+  
+  # Ordonner par année
+  matrice <- matrice[order(matrice$annee), ]
+  
+  # Sélectionner les colonnes pertinentes
+  matrice <- matrice[, c("annee", "pan_sensible", "non_pan_sensible")]
+  
+  # Transposer la matrice et nommer les colonnes avec les années
+  matrice <- t(matrice)
+  colnames(matrice) <- as.character(matrice[1, ])
+  matrice <- matrice[-1, ]
+  
+  # Convertir les années en numérique
+  colnames(matrice) <- as.numeric(colnames(matrice))
+  
+  # Afficher le résultat du test de Cochran-Armitage
+  cat("Résultats pour la modalité", population_modalite, ":\n")
+  print(CochranArmitageTest(matrice))
+}
+
+# Appliquer la fonction pour chaque modalité de population
+modalites_population <- c("ville", "ES-hemoculture", "ES", "EHPAD")
+for (modalite in modalites_population) {
+  perform_CochranArmitageTest(AMR_humaine_fr, modalite)
+}
+
+### pour les animaux :
+# Définir les modalités de population pour AMR_animale_fr
+modalites_population_animale <- unique(AMR_animale_fr$population)
+
+# Créer une liste pour stocker les résultats des tests
+resultats_tests <- list()
+
+# Boucle sur les modalités de population animale
+for (modalite in modalites_population_animale) {
+  resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
+}
+```
 
 # CORRELATIONS
 ```{r}
@@ -287,12 +341,89 @@ donnees_remodelees <- donnees_remodelees %>%
 
 On a fait les corrélations pour les animaux et en France entière, l'objectif serait de le faire aussi sur la population humaine. On remarque 2 groupes qui se distinguent dans la heatmap, avec un point d'attention sur bovin-abattoir qui est "loin" de bovin-adulte. C'est sûrement dû au fait qu'on n'a pas assez d'observations pour bovin-abattoir. Pour régler le problème, prendre les données régionales au lieu de celles nationales.
 
+Les régions n'ayant pas plus de 30 souches sont elles assez peu nombreuses parmi le total de souche ? --> si on analyse par région plutôt que la totalité, la perte d'information est-elle significativement "petite" ?
+```{r}
+effectif_national <- AMR %>%
+  filter(region == "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_national = sum(`effectif AMR`), .by = c(annee, population))
+
+effectif_regional <- AMR %>%
+  filter(region != "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_regional = sum(`effectif AMR`), .by = c(annee, population))
+
+AMR_perte_regionale <- full_join(effectif_national, effectif_regional)
+
+AMR_perte_regionale <- AMR_perte_regionale %>%
+  mutate(perte = 1 - effectif_regional/effectif_national) %>%
+  filter(!is.na(perte))
+
+ggplot(AMR_perte_regionale, aes(x = annee, y = perte))+
+  geom_bar(stat = "identity", position = "dodge")+
+  theme_minimal()+
+  labs(title = "Perte d'effectif dû au nombre de souches trop faible par région", 
+       subtitle = "La perte est exprimée en pourcentage : 1 - effectif régional / effectif national", 
+       y = "Perte", 
+       x = NULL,
+       caption = "Note de lecture : En 2012, 75% des données régionales provenaient de régions ayant analysé moins de 30 souches de porcs.")+
+  scale_y_continuous(labels = scales::label_percent(scale = 100))+
+  facet_wrap(~reorder(population, -perte, FUN = mean))
+```
+
+On va maintenant tester si la perte est significativement faible. Pour cela, on utilise un test de proportion qui va comparer la perte au seuil de 10% (valeur arbitraire). Peut-être qu'il faudra faire un test par population ?
+
+```{r}
+for (pop in unique(AMR_perte_regionale$population)){
+  donnees <- AMR_perte_regionale$perte[which(AMR_perte_regionale$population == pop)]
+  print(pop)
+  print(prop.test(sum(donnees), length(donnees), p = 0.3, alternative = "less")$p.value) # Perte significativement plus faible que 10 %
+}
+```
+problème !! Il y a plus de données régionales que nationales pour les données humaines (et notamment les ES-hemoculture), comment cela est possible ? 
+Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ??
+
 ## Les situations et variables sont-eles contrastées ?
 
 ```{r}
 boxplot(AMR$population ~ AMR$`valeur AMR`)
-#boxplot(AMR$`valeur AMR`~AMR$population)
+boxplot(AMR$`valeur AMR`~AMR$population)
+
+library(car)
+
+# Réaliser la MANOVA
+data_anova <- subset(AMR_humaine, select = -c(1, 4))
+data_anova$population <- as.factor(AMR_humaine$population)
+data_anova$region <- as.factor(AMR_humaine$region)
+data_anova$annee <- as.factor(data_anova$annee)
+
+# Analyse variance indépendante
+manova_result <- aov(`valeur AMR` ~ annee, data = data_anova)
+modele_anova <- aov(`valeur AMR` ~ region, data = data_anova)
+pop_anova <- aov(`valeur AMR` ~ population, data = data_anova)
+plot(pop_anova)
+manova_result
+modele_anova
+
+# NE PAS OUBLIER DE VERIFIER LES HYPOTHESES (normalité, pas de valeur aberrante, indépendance, homoscédasticité)
+# Analyse conjointe
+data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # Si on veut supprimer le national
+anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
+anova
+summary(anova)
+plot(anova)
+
+# anova_test
+library(rstatix)
+anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
+
+# Valeurs aberrantes 
+AMR_humaine %>%
+  identify_outliers(`valeur AMR`)
+
 ```
+La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
+F : variance.inter.groups/variance.intra.groups.
 
 # AMU et AMR
 
@@ -356,7 +487,7 @@ Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeu
 
 for (pop in unique(usage_animal$population)){
   mu <- mean(usage_animal$`valeur AMR`[which(usage_animal$population == pop)])
-  phi <- (mu * (1 - mu)) / var(usage_animal2$`valeur AMR`[which(usage_animal$population == pop)]) - 1
+  phi <- (mu * (1 - mu)) / var(usage_animal$`valeur AMR`[which(usage_animal$population == pop)]) - 1
   a <- mu * phi
   b <- (1 - mu) * phi
   hist(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
