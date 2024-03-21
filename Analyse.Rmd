@@ -387,7 +387,23 @@ Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ?
 
 ```{r}
 boxplot(AMR$population ~ AMR$`valeur AMR`)
-#boxplot(AMR$`valeur AMR`~AMR$population)
+boxplot(AMR$`valeur AMR`~AMR$population)
+
+library(car)
+
+# Réaliser la MANOVA
+data_anova <- subset(AMR_humaine, select = -c(1, 4))
+data_anova$population <- as.factor(AMR_humaine$population)
+data_anova$region <- as.factor(AMR_humaine$region)
+data_anova$annee <- scale(data_anova$annee)
+
+manova_result <- aov(`valeur AMR` ~ annee, data = data_anova)
+modele_anova <- aov(`valeur AMR` ~ region, data = data_anova)
+anova <- aov(`valeur AMR` ~ population, data = data_anova)
+
+anova
+manova_result
+modele_anova
 ```
 
 # AMU et AMR
