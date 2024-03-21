@@ -377,7 +377,7 @@ On va maintenant tester si la perte est significativement faible. Pour cela, on 
 for (pop in unique(AMR_perte_regionale$population)){
   donnees <- AMR_perte_regionale$perte[which(AMR_perte_regionale$population == pop)]
   print(pop)
-  print(prop.test(sum(donnees), length(donnees), p = 0.3, alternative = "less")$p.value) # Perte significativement plus faible que 10 %
+  print(prop.test(sum(donnees), length(donnees), p = 0.2, alternative = "less")) # Perte significativement plus faible que 10 %
 }
 ```
 problème !! Il y a plus de données régionales que nationales pour les données humaines (et notamment les ES-hemoculture), comment cela est possible ? 
@@ -488,7 +488,7 @@ for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ Valeur_AMU, link = "logit")
   print(pop)
-  print(model_beta$coefficients$mean)
+  print(summary(model_beta))
 }
 ```
 
