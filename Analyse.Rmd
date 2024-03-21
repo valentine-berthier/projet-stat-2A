@@ -395,16 +395,35 @@ library(car)
 data_anova <- subset(AMR_humaine, select = -c(1, 4))
 data_anova$population <- as.factor(AMR_humaine$population)
 data_anova$region <- as.factor(AMR_humaine$region)
-data_anova$annee <- scale(data_anova$annee)
+data_anova$annee <- as.factor(data_anova$annee)
 
+# Analyse variance indépendante
 manova_result <- aov(`valeur AMR` ~ annee, data = data_anova)
 modele_anova <- aov(`valeur AMR` ~ region, data = data_anova)
-anova <- aov(`valeur AMR` ~ population, data = data_anova)
-
-anova
+pop_anova <- aov(`valeur AMR` ~ population, data = data_anova)
+plot(pop_anova)
 manova_result
 modele_anova
+
+# NE PAS OUBLIER DE VERIFIER LES HYPOTHESES (normalité, pas de valeur aberrante, indépendance, homoscédasticité)
+# Analyse conjointe
+data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # Si on veut supprimer le national
+anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
+anova
+summary(anova)
+plot(anova)
+
+# anova_test
+library(rstatix)
+anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
+
+# Valeurs aberrantes 
+AMR_humaine %>%
+  identify_outliers(`valeur AMR`)
+
 ```
+La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
+F : variance.inter.groups/variance.intra.groups.
 
 # AMU et AMR
 
