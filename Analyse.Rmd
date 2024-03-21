@@ -383,44 +383,46 @@ for (pop in unique(AMR_perte_regionale$population)){
 problème !! Il y a plus de données régionales que nationales pour les données humaines (et notamment les ES-hemoculture), comment cela est possible ? 
 Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ??
 
-## Les situations et variables sont-eles contrastées ?
+## Les situations et variables sont-elles contrastées ?
 
 ```{r}
-boxplot(AMR$population ~ AMR$`valeur AMR`)
+#boxplot(AMR$population ~ AMR$`valeur AMR`)
 boxplot(AMR$`valeur AMR`~AMR$population)
 
-library(car)
-
-# Réaliser la MANOVA
+# Réaliser la ANOVA
 data_anova <- subset(AMR_humaine, select = -c(1, 4))
 data_anova$population <- as.factor(AMR_humaine$population)
 data_anova$region <- as.factor(AMR_humaine$region)
 data_anova$annee <- as.factor(data_anova$annee)
 
-# Analyse variance indépendante
-manova_result <- aov(`valeur AMR` ~ annee, data = data_anova)
-modele_anova <- aov(`valeur AMR` ~ region, data = data_anova)
-pop_anova <- aov(`valeur AMR` ~ population, data = data_anova)
-plot(pop_anova)
-manova_result
-modele_anova
-
-# NE PAS OUBLIER DE VERIFIER LES HYPOTHESES (normalité, pas de valeur aberrante, indépendance, homoscédasticité)
 # Analyse conjointe
-data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # Si on veut supprimer le national
+data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # On supprime les données nationales.
 anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
-anova
 summary(anova)
 plot(anova)
 
-# anova_test
+# autre test anova
 library(rstatix)
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 
-# Valeurs aberrantes 
-AMR_humaine %>%
+### Valeurs aberrantes
+data_anova %>%
   identify_outliers(`valeur AMR`)
+data_anova <- data_anova[-c(230,244,264),] # ça dégage
 
+### Hypothèse de normalité
+# Construire le modèle linéaire
+model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
+# Créer un QQ plot des résidus
+library(ggpubr)
+ggqqplot(residuals(model))
+shapiro_test(residuals(model))
+
+### Homogénéité des variances
+data_anova %>% levene_test(`valeur AMR` ~ population)
+data_anova %>% levene_test(`valeur AMR` ~ annee)
+data_anova %>% levene_test(`valeur AMR` ~ region)
+# On peut valider l'hypothèse pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes.
 ```
 La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
 F : variance.inter.groups/variance.intra.groups.
