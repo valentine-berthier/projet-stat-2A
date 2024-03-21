@@ -206,7 +206,7 @@ boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_
   labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
        x = "Groupe",
        y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
+       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : On observe des pertes non négligeables pour toutes les populations lors du passage de l'étude\nNationale à régionale. On en conclut que beaucoup de régions n'ont pas les effectifs nécessaires pour\ns'inscrire dans les rapports (minimum 30)"))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
         
@@ -237,7 +237,8 @@ ggplot(data=effectifs_totaux_humain, aes(x = annee, y = effectif_total_national)
 # ça ne marche pas car on observe plusieurs fois chaque population
 
 effectifs_totaux_humain<-effectifs_totaux_humain%>%
-  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
+  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)%>%
+  group_by(annee,population)
 
 
 boxplot_taux<-ggplot(effectifs_totaux_humain, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
@@ -245,7 +246,7 @@ boxplot_taux<-ggplot(effectifs_totaux_humain, aes(x = reorder(population, taux_e
   labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
        x = "Population étudiée",
        y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
+       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : Pour chaque population, on observe une perte d'effectif de moins d'1%"))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,1))
 boxplot_taux
 
@@ -299,11 +300,10 @@ for (pop in levels(table_join$population)){
 Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
 
 <<<<<<< HEAD
-```{r}
-=======
+
 ```{r,echo=FALSE}
 
->>>>>>> 1f89f91d53901cb68e21d4d5725540c18cd7b303
+
 table_join<-table_join%>%
   mutate(taux=(eff_pansensible/eff_C3G)*100)
 
@@ -324,3 +324,19 @@ ggplot(table_join, aes(x = reorder(population, taux), y = taux)) +
 
 
 ## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
+
+
+
+
+## Cartographie
+
+## Données AMR pour la population ville de 2021
+
+## Données AMR pour la population bovin de 2021
+## Données AMR pour la population chien&chat de 2021
+
+
+
+
+
+
