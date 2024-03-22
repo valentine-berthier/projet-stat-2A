@@ -17,23 +17,27 @@ library(stringr)
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
 
-# INTRODUCTION
+# INTRODUCTION DE LA PARTIE ANALYSE
 
-## Importation des données
+## Importation des données et transformation des variables
 
-```{r,echo=FALSE}
+```{r,echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
 
 # Données permettant d'étudier la perte d'effectif des pan-sensibles
 ResapathFrance <- read_xlsx("donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",sheet = "Modele de collecte")
 
+# Données d'usage d'antibiotiques
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
+
+usage_animal$population <- as.factor(usage_animal$population)
+
+usage_animal <- usage_animal %>%
+  arrange(population, -annee)
+
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
-```
 
-## Transformation des jeux de données
-
-```{r,echo=FALSE}
 AMR_nationale <- AMR %>%
   filter(region == "Nationale")
 AMR_regionale <- AMR %>%
@@ -46,6 +50,8 @@ AMR_nationale_humain <- AMR_nationale %>%
 
 # Indicatrice selon que la population provient d'un abattoir ou non
 AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
+
+AMR$famille2 <- paste(AMR$famille, ifelse(grepl("abattoir", AMR$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
 
 AMR_regionale$famille2 <- paste(AMR_regionale$famille, ifelse(grepl("abattoir", AMR_regionale$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
 
@@ -80,7 +86,9 @@ ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`
   scale_fill_manual(values = c("#90fc9b", "#4b9c4f", "#fa9c43"))+
   scale_y_discrete(labels = label)
 
-ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille))+
+label <- c("Veau", "Lapin", "Porc", "Poulet", "Volaille", "Dinde", "Caprin", "EHPAD", "Veau", "ES-hemoculture", "Ovin", "ES", "Porc","Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Bovin", "Chat")
+
+ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille2))+
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Comparaison des valeurs Pan-S entre animaux et humains (France entière ajoutée)",
@@ -97,39 +105,123 @@ Sur ce graphique nous avons ajouté la répartition des familles qui permet d'av
 
 Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont une plus grande sensibilité que les animaux dits de "production" (volaille-abattoir, bovin-abattoir, poulet-abattoir) qui ont tendance à plus apparaître vers les faibles valeurs de sensibilité.
 
-# Famille animale
+# VALIDATION DE LA PAN-S
+
+## Propriétés de l'indicateur
+
+### Possibilité de calcul de la pan-S
+
+#### Taille du jeu de données
+```{r echo=TRUE}
+print(paste("nombre moyen d'isolats considérés en France entière: ", round(mean(AMR_nationale$`effectif AMR`), 0)))
+print(paste("nombre moyen d'isolats considérés en découpage par région: ", round(mean(AMR_regionale$`effectif AMR`), 0)))
+
+AMR %>%
+  group_by(population, annee, region) %>%
+  summarise(`nombre moyen d'isolats` = round(mean(`effectif AMR`), 0))%>%
+  arrange(desc(`nombre moyen d'isolats`))
+
+AMR %>%
+  group_by(population) %>%
+  summarise(`nombre de régions` = n_distinct(region)-1)%>%
+  arrange(desc(`nombre de régions`))
+```
+
+Par population et année, il y a, en moyenne, 24331 isolats. Plus on avance dans le temps, plus on a d'isolats considérés dans les analyses.
 
 ```{r,echo=FALSE}
-moyenne_AMR <- AMR_nationale_animal %>%
-  group_by(population, famille, abattoir) %>%
-  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
-  arrange(moyenne_AMR)
+effectif_national <- AMR %>%
+  filter(region == "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_national = sum(`effectif AMR`), .by = c(annee, population))
 
-ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR), fill = abattoir))+
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Les animaux d'abattoir sont plus résistants aux antibiotiques",
-       subtitle = "L'antibiorésistance (AMR) des différentes populations animales",
-       caption = "Note: Moyenne calculée sur les années des données nationales.",
-       y = "Population",
-       x = "AMR moyen") +
-  theme_minimal()  +
-  guides(fill = FALSE) +
-  scale_fill_manual(values = c("lightblue", "lightgreen"))
+effectif_regional <- AMR %>%
+  filter(region != "Nationale") %>%
+  select(annee, population, `effectif AMR`) %>%
+  summarise(effectif_regional = sum(`effectif AMR`), .by = c(annee, population))
 
-moyenne_AMR <- AMR_nationale_humain %>%
-  group_by(population, famille) %>%
-  summarize(moyenne_AMR = mean(`valeur AMR`)) %>%
-  arrange(moyenne_AMR)
+AMR_perte_regionale <- full_join(effectif_national, effectif_regional)
 
-ggplot(moyenne_AMR, aes(x = moyenne_AMR, y = reorder(population, moyenne_AMR)))+
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "En ville, les individus sont moins résistants aux antibiotiques",
-       subtitle = "L'antibiorésistance (AMR) des différentes populations humaines",
-       caption = "Note: Moyenne calculée sur les années des données nationales.",
-       y = "Population",
-       x = "AMR moyen") +
-  theme_minimal()
+AMR_perte_regionale_animal <- AMR_perte_regionale %>%
+  mutate(perte = 1 - effectif_regional/effectif_national) %>%
+  filter(!is.na(perte))%>%
+  filter(!(population %in% c("ville", "EHPAD", "ES", "ES-hemoculture")))
+
+AMR_perte_regionale_humain <- AMR_perte_regionale %>%
+  mutate(perte = 1 - effectif_regional/effectif_national) %>%
+  filter(!is.na(perte))%>%
+  filter(population %in% c("ville", "EHPAD", "ES", "ES-hemoculture"))
+
+rm(AMR_perte_regionale, effectif_regional, effectif_national)
+  
+label <- c("Chien", "Veau", "Chat", "Bovin", "Cheval", "Volaille-abattoir", "Dinde-abattoir", "Lapin", "Porc", "Porc-abattoir", "Poulet-abattoir", "Veau-abattoir")
+
+ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte)) +
+  geom_boxplot() +
+  geom_hline(yintercept = mean(AMR_perte_regionale_animal$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
+  labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
+       x = NULL,
+       y = "Taux d'effectif perdu",
+       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 12.5% pour la population des chats."))+
+  scale_y_continuous(labels = scales::label_percent(scale = 100))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  annotate("text", x = 11, y = 0.18, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)+
+  scale_x_discrete(labels = label)
+
+ggplot(AMR_perte_regionale_humain, aes(x = reorder(population, perte), y = perte)) +
+  geom_hline(yintercept = mean(AMR_perte_regionale_humain$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
+  geom_boxplot() +
+  labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
+       x = NULL,
+       y = "Taux d'effectif perdu",
+       caption = str_glue("Cohorte : population humaine\nLecture : Entre 2012 et 2021, les isolats humains ont subi moins de 1% de perte au niveau régional."))+
+  scale_y_continuous(labels = scales::label_percent(scale = 100), limits = c(0,0.01))+
+  annotate("text", x = 0.7, y = 0.0014, label = "Mean = 0.09%", colour = "darkgreen", size = 3.3)+
+  scale_x_discrete(labels = c("ES", "ES-hemoculture", "Ville", "EHPAD"))
 ```
+La différence entre les effectifs nationaux et régionaux pour les population humaines sont de l'ordre de 1% et constitue donc une part négligeable à l'étude. L'étude au niveau régionale ne constitue donc pas un risque en terme de perte d'information. Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
+
+#### Perte d’information liée aux souches pour lesquelles ce n’est pas calculable
+
+```{r,echo=FALSE}
+table1 <- ResapathFrance_sansSARM %>%
+  filter(`profil AMR` == "pan-sensible") %>%
+  mutate(eff_pansensible = `effectif AMR`) %>%
+  select(annee, population, eff_pansensible)
+
+table2 <- ResapathFrance_sansSARM %>%
+  filter(`profil AMR` == "C3G-R") %>%
+  mutate(eff_C3G = `effectif AMR`) %>%
+  select(annee, population, eff_C3G)
+
+table_join <- merge(table1, table2, by = c("annee", "population"), all = TRUE)
+
+table_join<-table_join%>%
+  mutate(taux=(eff_pansensible/eff_C3G)*100)
+
+label <- c("Veau", "Chat", "Chien", "Cheval", "Bovin", "Porc", "Poulet", "Dinde", "Lapin")
+
+ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
+  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
+       x = NULL,
+       y = "Taux de perte",
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13 % des animaux étudiés n'ontp pas un profil de résistance pan-sensible."))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+  scale_x_discrete(labels = label)+
+  annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
+```
+
+### Validité de l'information
+
+
+
+### Variabilité des données
+
+## Points d'intérêt de l'indicateur
+
+### Identification de tendances
 
 ```{r,echo=FALSE}
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -162,227 +254,9 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
        color = "Population") +
   theme_minimal()
 ```
-\newline
-## 2 dimension d'étude : Nationale ou Régionale. Laquelle choisir pour quelle famille ? 
-### Famille : Animale
-```{r, echo=FALSE, include=FALSE}
-# Effectif totaux étudiés pour chaque année et chaque population indépendamment de la région
-df_region <- AMR %>% 
-  select(annee,population,region,famille,`effectif AMR`)%>%
-  filter(region!="Nationale")%>%
-  group_by(annee,population,famille) %>%
-  summarise(effectif_total_region = sum(`effectif AMR`))
 
-df_region
+#### Tests de tendance
 
-# Essayons de contraster cela aux effectifs nationaux
-df_national<-AMR %>%
-  select(annee,population,famille,region,`effectif AMR`)%>%
-  filter(region=="Nationale")%>%
-  group_by(annee,population,famille) %>%
-  summarise(effectif_total_national = sum(`effectif AMR`))
-
-df_national
-
-# Joindre les tables en utilisant la fonction dplyr inner_join()
-effectifs_totaux <- inner_join(df_region,df_national,by = c("annee","population","famille"))
-effectifs_totaux<-effectifs_totaux%>%
-mutate(diff_effectif=effectif_total_national-effectif_total_region)
-# En supposant que les effectifs nationaux sont plus grand que ceux régionaux car on comptabiliserait les régions pour lesquelles nous n'étudions pas assez d'individus
-effectifs_totaux
-
-```
-
-```{r,echo=FALSE}
-effectifs_totaux_animale<-effectifs_totaux%>%
-  filter(famille==unique(AMR$famille)[1])
-
-ggplot(data=effectifs_totaux_animale, aes(x = annee, y = effectif_total_national)) +
-  geom_col(width = 1, fill = "orange") +       # tracer le nombre de cas sous forme de colonnes
-  theme_minimal()+                              # simplifier les  arrière-plans
-  labs(                                         # ajouter  les noms d'axes, titres ... 
-    x = "Année d'étude",
-    y = "Effectif AMR étudié",
-    title = "Effectif total AMR par population animale en fonction de l'année") +
-  facet_wrap(~population) 
-  
-```
-
-```{r,echo=FALSE}
-effectifs_totaux_animale<-effectifs_totaux_animale%>%
-  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
-  
-effectifs_totaux_animale$abattoir <- grepl("abattoir", effectifs_totaux_animale$population, ignore.case = TRUE)
-  
-label <- c("Chien", "Veau", "Chat", "Bovin", "Cheval", "Volaille-abattoir", "Dinde-abattoir", "Lapin", "Porc", "Porc-abattoir", "Poulet-abattoir", "Veau-abattoir")
-
-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
-  geom_boxplot() +
-  geom_hline(yintercept = mean(effectifs_totaux_animale$taux_eff_perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
-  labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
-       x = NULL,
-       y = "Taux d'effectif perdu",
-       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 12.5% pour la population des chats."))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  scale_x_discrete(labels = label)+
-  annotate("text", x = 11, y = 20, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)
-```
-Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
-
-### Famille : Humaine
-
-
-```{r, echo=FALSE}
-effectifs_totaux_humain<-effectifs_totaux%>%
-  filter(famille==unique(AMR$famille)[2])
-
-ggplot(data=effectifs_totaux_humain, aes(x = annee, y = effectif_total_national)) +
-  geom_col(width = 1, fill = "skyblue") +       # tracer le nombre de cas sous forme de colonnes
-  theme_minimal()+                              # simplifier les  arrière-plans
-  labs(                                         # ajouter  les noms d'axes, titres ... 
-    x = "Année d'étude",
-    y = "Effectif AMR étudié",
-    title = "Effectif total AMR par population humaine en fonction de l'année") +
-  facet_wrap(~population) 
-
-```
-
-```{r,echo=FALSE}
-#barplot(population ~ effectif_total_region, data = effectifs_totaux)
-# ça ne marche pas car on observe plusieurs fois chaque population
-
-effectifs_totaux_humain<-effectifs_totaux_humain%>%
-  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)
-
-
-boxplot_taux<-ggplot(effectifs_totaux_humain, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
-  geom_boxplot() +
-  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
-       x = "Population étudiée",
-       y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : "))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,1))
-boxplot_taux
-
-```
-
-La différence entre les effectifs nationaux et régionaux pour les population humaines sont de l'ordre de 1% et constitue donc une part négligeable à l'étude. L'étude au niveau régionale ne constitue donc pas un risque en terme de perte d'information. 
-
-
-
-# VALIDATION DE L'INDICATEUR
-
-## Est-il possible de calculer l'indicateur pour toutes les caractéristiques ?
-
-## L'indicateur est-il basé sur un nombre d'isolats plus faible (significativement ?) que d'autres indicateurs de résistance ?
-
-```{r,echo=FALSE}
-table1 <- ResapathFrance_sansSARM %>%
-  filter(`profil AMR` == "pan-sensible") %>%
-  mutate(eff_pansensible = `effectif AMR`) %>%
-  select(annee, population, eff_pansensible)
-
-table2 <- ResapathFrance_sansSARM %>%
-  filter(`profil AMR` == "C3G-R") %>%
-  mutate(eff_C3G = `effectif AMR`) %>%
-  select(annee, population, eff_C3G)
-
-table_join <- merge(table1, table2, by = c("annee", "population"), all = TRUE)
-
-for (pop in levels(table_join$population)){
-  table_join1 <- table_join %>%
-    filter(population == pop) %>%
-    mutate(taux_eff = round((eff_pansensible * 100) / eff_C3G, 2),
-           min_max_value = ifelse(taux_eff == max(taux_eff), "MAX", ifelse(taux_eff == min(taux_eff), "MIN", "none")))
-  
-  moyenne = round(mean(table_join1$taux_eff),2)
-  
-  plot <- ggplot(data = table_join1, aes(x = annee, y = taux_eff, fill = min_max_value))+
-    geom_col(width = 0.5) + 
-    theme_minimal()+                     
-    labs(x = "Annee",
-         y = "",
-         title = "Fraction d'isolats bactériens pour lesquels la pan-sensibilité a pu être calculée.",
-         subtitle = str_glue("En moyenne, le taux est de {moyenne}")) +
-    facet_wrap(~population)+
-    scale_y_continuous(labels = scales::number_format(suffix="%"), limits = c(0,100))+
-    scale_fill_manual(values = c("MIN" = "red", "MAX" = "green","none" = "grey"), guide = "none")
-  plot(plot)
-}
-```
-\newline Hormis pour le bovin-abattoir à l'année 2019, dans ce cas le profil FQ-R semble être plus sensible que les autres (effectif plus grand), aucun antibiotique ne semble présenter une résistance plus forte ce qui aurait engendrer une grosse différence dans les effectifs. 
-Il n'y a donc pas de grande perte d'effectif suite aux AB testés. 
-
-<<<<<<< HEAD
-```{r}
-=======
-```{r,echo=FALSE}
->>>>>>> 4e853533e0fe7f18b328807c3a6105b455610fe0
-table_join<-table_join%>%
-  mutate(taux=(eff_pansensible/eff_C3G)*100)
-
-label <- c("Lapin", "Dinde", "Poulet", "Porc", "Bovin", "Cheval", "Chien", "Chat", "Veau")
-
-# Boxplot pour représenter la variation intra-groupe
-
-ggplot(table_join, aes(x = reorder(population, taux), y = 100-taux)) +
-  geom_boxplot() +
-  geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
-  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque groupe étudié",
-       x = NULL,
-       y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau National\nLecture : En moyenne, 87 % des animaux étudiés ont un profil de résistance pan-sensible."))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
-  scale_x_discrete(labels = label)+
-  annotate("text", x = 8, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
-```
-
-
-## Les situations et les variables disponibles sont assez contrastées ?
-
-## IDENTIFICATION DE TENDANCES
-### Evolution de l'AMR en fonction des années
-```{r}
-# Graphique général (peu lisible)
-ggplot(AMR_animale_fr, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
-  geom_line(stat = "summary", fun = "mean") +
-  geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Évolution des moyennes de l'AMR selon les années",
-       x = "Année",
-       y = "Moyenne de l'AMR",
-       color = "Population") +
-  theme_minimal()
-
-# On filtre les données pour inclure uniquement les populations en abattoir ou non
-AMR_animale_fr_abattoir <- AMR_animale_fr %>%
-  filter(grepl("abattoir", population, ignore.case = TRUE))
-
-AMR_animale_fr_horsabattoir <- AMR_animale_fr %>%
-  filter(!grepl("abattoir", population, ignore.case = TRUE))
-
-# Graphique abattoir
-ggplot(AMR_animale_fr_abattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
-  geom_line(stat = "summary", fun = "mean") +
-  geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
-       x = "Année",
-       y = "Moyenne de l'AMR",
-       color = "Population") +
-  theme_minimal()
-
-# Graphique hors abattoir
-ggplot(AMR_animale_fr_horsabattoir, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
-  geom_line(stat = "summary", fun = "mean") +
-  geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Évolution des moyennes de l'AMR pour les populations en abattoir selon les années",
-       x = "Année",
-       y = "Moyenne de l'AMR",
-       color = "Population") +
-  theme_minimal()
-```
-
-# Tests de tendance
 ```{r}
 ############### COCHRAN ARMITAGE
 # Chargement des bibliothèques
@@ -435,5 +309,3 @@ for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
 }
 ```
-
-## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
