@@ -548,26 +548,38 @@ summary(modele_panel)
 # Hypothèse de normalité
 shapiro_test(residuals(modele_panel)) #p-value > 0,05 donc on rejette l'hypothèse nulle, ainsi l'hypothèse de normalité des résidus est vérifiée.
 
-### Test d'Hausmann : on regarde si on utilise les effets fixes ou aléatoires
-if(!require("plm")){
-  install.packages("plm")
-  require("plm")
+#### Test hetéroscédasticité
+# Ajuster votre modèle de données de panel
+modele <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "pooling")
+
+# Obtenir les résidus
+residus <- resid(modele)
+
+# Ajuster la régression auxiliaire
+reg_aux <- lm(residus^2 ~ usage_animal$Valeur_AMU + usage_animal$annee)
+if(!require("lmtest")){
+  install.packages("lmtest")
+  require("lmtest")
 }
+# Effectuer le test de Breusch-Pagan
+bp_test <- bptest(reg_aux)
+# C'EST HETEROSCEDASTIQUE BORDEL
 
-# Ajuster un modèle à effets fixes
-modele_fixe <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "within")
+#### On fait donc un GLM youpi
+# Ajuster un modèle GLM avec une structure de variance spécifiée (par exemple, Gamma ou Gaussian)
+modele_glm <- glm(`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, family = gaussian)
 
-# Ajuster un modèle à effets aléatoires
-modele_aleatoire <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "random")
+# Obtenir un aperçu du modèle
+summary(modele_glm)
 
-# Extraire les résidus des deux modèles
-residus_fixes <- resid(modele_fixe)
-residus_aleatoires <- resid(modele_aleatoire)
+# Visualiser les résidus
+plot(modele_glm, which = 1)  # Visualisation des résidus standardisés
+plot(modele_glm, which = 2)  # Visualisation des résidus quantiles
 
-df <- 2
+# Si nécessaire, ajuster un modèle GLM avec une structure de variance spécifiée (par exemple, Gamma ou Inverse Gaussian)
+# modele_glm2 <- glm(valeur_AMR ~ Valeur_AMU + annee, data = usage_animal, family = gamma)
+# summary(modele_glm2)
 
-# Calculer la statistique de test d'Hausman
-hausman_stat <- sum(residus_fixes^2 - residus_aleatoires^2)
 ```
 
 Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
