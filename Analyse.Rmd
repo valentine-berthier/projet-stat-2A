@@ -430,9 +430,9 @@ F : variance.inter.groups/variance.intra.groups.
 ### AMU et AMR
 
 ```{r}
-usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
-
-usage_animal$population <- as.factor(usage_animal$population)
+usage <- read_excel("donnees/D_usage.xlsx")
+str(usage)
+usage$population <- as.factor(usage$population)
 
 usage_animal <- usage_animal %>%
   arrange(population, -annee)
