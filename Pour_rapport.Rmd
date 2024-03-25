@@ -239,6 +239,8 @@ Cartographie
 
 ### Identification de tendances
 
+Spageti plot et tests de tendance -> pour montrer que des tendances identifiables
+
 ```{r,echo=FALSE}
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
@@ -270,7 +272,6 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
        color = "Population") +
   theme_minimal()
 ```
-
 #### Tests de tendance
 
 ```{r}
@@ -325,3 +326,15 @@ for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
 }
 ```
+
+### Lien à l'usage
+
+Regression beta ou correlation sur lien entre usage et resistance à echelle nationale dans temps pour chaque population et à échelle régionale pour homme (modèles de panel ?). 
+Voir s’il faut tester un décalage dans le temps (lien meilleur si prend usage N-1 ?)
+Voir s’il faut tester le lien à l’usage décomposé par famille antibiotique (et non somme globale -> déterminer une famille qui jouerait plus particulièrement)
+Significativité attendue et force du lien (part de variabilité expliquée par usage ? aire sous courbe ROC ?).
+
+```{r}
+
+```
+
