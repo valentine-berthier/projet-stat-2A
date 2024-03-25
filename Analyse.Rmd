@@ -532,8 +532,11 @@ for (pop in unique(usage_animal$population)){
 # modèle de panel
 ```{r}
 # Charger le package nécessaire pour les modèles linéaires mixtes
-library(lme4)
-
+if(!require("lme4")){
+  install.packages("lme4")
+  require("lme4")
+}
+library(rstatix)
 # On utilise un modèle linéaire mixte étant donné qu'on a une variable continue.
 modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal, control=lmerControl(optimizer="bobyqa"))
 
@@ -542,6 +545,30 @@ modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data 
 # Afficher un résumé des résultats du modèle
 summary(modele_panel)
 
-shapiro_test(residuals(modele_panel))
+# Hypothèse de normalité
+shapiro_test(residuals(modele_panel)) #p-value > 0,05 donc on rejette l'hypothèse nulle, ainsi l'hypothèse de normalité des résidus est vérifiée.
+
+### Test d'Hausmann : on regarde si on utilise les effets fixes ou aléatoires
+if(!require("plm")){
+  install.packages("plm")
+  require("plm")
+}
+
+# Ajuster un modèle à effets fixes
+modele_fixe <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "within")
+
+# Ajuster un modèle à effets aléatoires
+modele_aleatoire <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "random")
+
+# Extraire les résidus des deux modèles
+residus_fixes <- resid(modele_fixe)
+residus_aleatoires <- resid(modele_aleatoire)
+
+df <- 2
+
+# Calculer la statistique de test d'Hausman
+hausman_stat <- sum(residus_fixes^2 - residus_aleatoires^2)
+
+
 ```
 Cette sortie indique que l'AMU a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
