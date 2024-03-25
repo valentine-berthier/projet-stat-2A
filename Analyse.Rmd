@@ -571,4 +571,13 @@ hausman_stat <- sum(residus_fixes^2 - residus_aleatoires^2)
 
 
 ```
-Cette sortie indique que l'AMU a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
+
+Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
+
+```{r}
+# Installe le package s'il n'existe pas encorre sinon ne l'installe pas
+if(!require("bit64")){
+  install.packages("bit64")
+  require("bit64")
+}
+```
