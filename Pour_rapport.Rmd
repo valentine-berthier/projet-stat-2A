@@ -94,7 +94,6 @@ ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), f
        subtitle = "Comparaison des valeurs Pan-S entre animaux et humains (France entière ajoutée)",
        caption = "Note: Chaque ligne de données correspond à une région ou la france entière et une année",
        y = NULL,
-       x = "AMR moyen",
        x = "Valeur Pan-S",
        fill = "Famille")+
   theme_minimal()+
@@ -110,6 +109,9 @@ Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont un
 ## Propriétés de l'indicateur
 
 ### Possibilité de calcul de la pan-S
+
+Taille du jeu de données (nombre moyen d’isolats considérés)
+Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population 
 
 #### Taille du jeu de données
 ```{r echo=TRUE}
@@ -162,7 +164,7 @@ ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte
   labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
        y = "Taux d'effectif perdu",
-       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 12.5% pour la population des chats."))+
+       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 50% pour la population des porcs."))+
   scale_y_continuous(labels = scales::label_percent(scale = 100))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   annotate("text", x = 11, y = 0.18, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)+
@@ -215,9 +217,23 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
 
 ### Validité de l'information
 
-
+Comparer ici les valeurs pan-S si on rajoute les tetracyclines chez animal ou colistine ou carbapenemes chez homme ->est-ce que valeur change beaucoup. Pas faisable pour toutes sources de données mais ok pour Resapath et LNR chez l’animal.
 
 ### Variabilité des données
+
+représenter des boxplots par population des estimations régionales annuelles (ou toute autre représentation type violinplot, raincloud plot ou autre). -> pour montrer que de la variabilité.
+Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
+Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
+
+La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
+
+#### Variabilité annuelle
+
+#### Variabilité entre les régions
+
+Cartographie
+
+#### L'analyse de variance
 
 ## Points d'intérêt de l'indicateur
 
