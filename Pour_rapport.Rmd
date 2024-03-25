@@ -214,6 +214,7 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
+TEST A FAIRE
 
 ### Validité de l'information
 
@@ -227,13 +228,15 @@ Faire une estimation des facteurs de variation (entre année, région, populatio
 
 La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
 
-#### Variabilité annuelle
+#### 1 : Variabilité annuelle
 
-#### Variabilité entre les régions
+#### 2 : Variabilité entre les régions
 
 Cartographie
 
-#### L'analyse de variance
+#### 3 : L'analyse de variance
+
+Anova
 
 ## Points d'intérêt de l'indicateur
 
