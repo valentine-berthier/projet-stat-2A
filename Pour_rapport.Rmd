@@ -214,7 +214,31 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
-TEST A FAIRE
+# Test de proportion
+```{r}
+if(!require("plyr")){
+  install.packages("plyr")
+  require("plyr")
+}
+
+# Calculer la moyenne
+proportion_obs <- (100 - mean(table_join$taux))/100
+
+# On spécifie la proportion qu'on souhaite tester (21%)
+proportion_nulle <- 21/100
+
+# Calculer la statistique de test z
+z_stat <- (proportion_obs - proportion_nulle) / sqrt(proportion_nulle * (1 - proportion_nulle) / nrow(table_join))
+
+# Calculer la valeur p pour un test unilatéral à gauche
+p_value <- pnorm(z_stat)
+
+cat("Proportion observée:", proportion_obs, "\n")
+cat("Statistique de test z:", z_stat, "\n")
+cat("P-valeur:", p_value, "\n")
+
+```
+Avec un niveau de confiance de 95%, on peut conclure que la proportion de perte pour chaque isolat est significativement inférieure à 21%.
 
 ### Validité de l'information
 
