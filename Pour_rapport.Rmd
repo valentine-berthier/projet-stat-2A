@@ -440,10 +440,51 @@ for (modalite in modalites_population_animale) {
 
 ## Cartographie
 
+```{r}
+
+AMR_ville_2021<-AMR%>%
+  filter(population=="ville",annee=="2021")
+
+AMR_bovin_2021<-AMR%>%
+  filter(population=="bovin-adulte",annee=="2021")
+AMR_chat_2021<-AMR%>%
+  filter(population=="Chat",annee=="2021")
+
+```
+
+
+```{r}
+Regions <- st_read(dsn = extraWD, layer = "REGION",
+                            quiet = TRUE)
+```
+
+```{r}
+regions<-data.frame(unique(AMR_ville_2021$region))
+names(regions)<-"libelle"
+reg_2019<-read.csv("donnees/region2019.csv")
+
+regions_code<-full_join(regions, reg_2019, by = "libelle")
+
+AMR_ville_2021%>%
+ggplot() +
+  geom_sf(data=AMR_ville_2021,aes(fill=`valeur AMR`), color='white', linewidth=0.1)
+
+departements <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
+  filter(NOM %in% regions)
+  group_by(INSEE_REG)%>%
+  summarise()
+
+  
+```
+
 ## Données AMR pour la population ville de 2021
 
 ## Données AMR pour la population bovin de 2021
+
+
 ## Données AMR pour la population chien&chat de 2021
+
+
 
 
 
