@@ -209,7 +209,7 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13 % des animaux étudiés n'ontp pas un profil de résistance pan-sensible."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13 % des animaux étudiés n'ont pas un profil de résistance pan-sensible."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)

@@ -529,7 +529,7 @@ for (pop in unique(usage_animal$population)){
 }
 ```
 
-# modèle de panel
+# modèle de panel 
 ```{r}
 # Charger le package nécessaire pour les modèles linéaires mixtes
 if(!require("lme4")){
