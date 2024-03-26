@@ -132,11 +132,6 @@ ggplot(AMR_animale, aes(x = region, y = `valeur AMR`)) +
 moyenne_par_region_population <- AMR_animale %>%
   group_by(region, population) %>%
   summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
-
-modele_anova <- aov(moyenne_AMR ~ region + population, data = moyenne_par_region_population)
-summary(modele_anova)
-
-# je n'arrive pas à réaliser l'analyse que je veux :()
 ```
 
 
@@ -144,6 +139,13 @@ summary(modele_anova)
 ```{r}
 AMR_animale_fr %>%
   group_by(population, famille) %>%
+  summarize(
+    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
+    .groups = 'drop'
+  )
+
+AMR_animale %>%
+  group_by(region, famille) %>%
   summarize(
     variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
     .groups = 'drop'
@@ -377,60 +379,68 @@ On va maintenant tester si la perte est significativement faible. Pour cela, on 
 for (pop in unique(AMR_perte_regionale$population)){
   donnees <- AMR_perte_regionale$perte[which(AMR_perte_regionale$population == pop)]
   print(pop)
-  print(prop.test(sum(donnees), length(donnees), p = 0.3, alternative = "less")$p.value) # Perte significativement plus faible que 10 %
+  print(prop.test(sum(donnees), length(donnees), p = 0.2, alternative = "less")) # Perte significativement plus faible que 10 %
 }
 ```
 problème !! Il y a plus de données régionales que nationales pour les données humaines (et notamment les ES-hemoculture), comment cela est possible ? 
 Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ??
 
-## Les situations et variables sont-eles contrastées ?
+## Les situations et variables sont-elles contrastées ?
 
 ```{r}
-boxplot(AMR$population ~ AMR$`valeur AMR`)
-boxplot(AMR$`valeur AMR`~AMR$population)
-
-library(car)
-
-# Réaliser la MANOVA
+# Réaliser la ANOVA
 data_anova <- subset(AMR_humaine, select = -c(1, 4))
 data_anova$population <- as.factor(AMR_humaine$population)
 data_anova$region <- as.factor(AMR_humaine$region)
 data_anova$annee <- as.factor(data_anova$annee)
 
-# Analyse variance indépendante
-manova_result <- aov(`valeur AMR` ~ annee, data = data_anova)
-modele_anova <- aov(`valeur AMR` ~ region, data = data_anova)
-pop_anova <- aov(`valeur AMR` ~ population, data = data_anova)
-plot(pop_anova)
-manova_result
-modele_anova
-
-# NE PAS OUBLIER DE VERIFIER LES HYPOTHESES (normalité, pas de valeur aberrante, indépendance, homoscédasticité)
 # Analyse conjointe
-data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # Si on veut supprimer le national
+data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # On supprime les données nationales.
 anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
-anova
 summary(anova)
 plot(anova)
 
-# anova_test
-library(rstatix)
+# autre test anova
+if(!require("rstatix")){
+  install.packages("rstatix")
+  require("rstatix")
+}
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 
-# Valeurs aberrantes 
-AMR_humaine %>%
+### Valeurs aberrantes
+data_anova %>%
   identify_outliers(`valeur AMR`)
+data_anova <- data_anova[-c(230,244,264),] # ça dégage
 
+### Hypothèse de normalité
+# Construire le modèle linéaire
+model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
+# Créer un QQ plot des résidus
+if(!require("ggpubr")){
+  install.packages("ggpubr")
+  require("ggpubr")
+}
+# ggqqplot(residuals(model))
+# shapiro_test(residuals(model))
+
+
+### Homogénéité des variances
+
+# data_anova %>% levene_test(`valeur AMR` ~ population)
+# data_anova %>% levene_test(`valeur AMR` ~ annee)
+# data_anova %>% levene_test(`valeur AMR` ~ region)
+
+# On peut valider l'hypothèse pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes.
 ```
 La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
 F : variance.inter.groups/variance.intra.groups.
 
-# AMU et AMR
+### AMU et AMR
 
 ```{r}
-usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
-
-usage_animal$population <- as.factor(usage_animal$population)
+usage <- read_excel("donnees/D_usage.xlsx")
+str(usage)
+usage$population <- as.factor(usage$population)
 
 usage_animal <- usage_animal %>%
   arrange(population, -annee)
@@ -523,7 +533,46 @@ for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ Valeur_AMU, link = "logit")
   print(pop)
-  print(model_beta$coefficients$mean)
+  print(summary(model_beta))
 }
 ```
 
+# modèle de panel 
+```{r}
+# Charger le package nécessaire pour les modèles linéaires mixtes
+if(!require("lme4")){
+  install.packages("lme4")
+  require("lme4")
+}
+library(rstatix)
+# On utilise un modèle linéaire mixte étant donné qu'on a une variable continue.
+modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal, control=lmerControl(optimizer="bobyqa"))
+
+modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal)
+
+# Afficher un résumé des résultats du modèle
+summary(modele_panel)
+
+# Hypothèse de normalité
+shapiro_test(residuals(modele_panel)) #p-value > 0,05 donc on rejette l'hypothèse nulle, ainsi l'hypothèse de normalité des résidus est vérifiée.
+
+#### Test hetéroscédasticité
+# Ajuster votre modèle de données de panel
+modele <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "pooling")
+
+# Obtenir les résidus
+residus <- resid(modele)
+
+# Ajuster la régression auxiliaire
+reg_aux <- lm(residus^2 ~ usage_animal$Valeur_AMU + usage_animal$annee)
+if(!require("lmtest")){
+  install.packages("lmtest")
+  require("lmtest")
+}
+# Effectuer le test de Breusch-Pagan
+bp_test <- bptest(reg_aux)
+# C'EST HETEROSCEDASTIQUE...
+```
+
+Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
+Cependant après une analyse les données semblent hétéroscédastique, on va donc privilégier une regression bêta.
