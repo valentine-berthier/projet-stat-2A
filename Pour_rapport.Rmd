@@ -492,7 +492,6 @@ for (modalite in modalites_population_animale) {
 }
 ```
 
-<<<<<<< HEAD
 ## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
 
 
@@ -523,16 +522,47 @@ regions<-data.frame(unique(AMR_ville_2021$region))
 names(regions)<-"libelle"
 reg_2019<-read.csv("donnees/region2019.csv")
 
-regions_code<-full_join(regions, reg_2019, by = "libelle")
 
-AMR_ville_2021%>%
-ggplot() +
-  geom_sf(data=AMR_ville_2021,aes(fill=`valeur AMR`), color='white', linewidth=0.1)
+regions_code<-left_join(regions, reg_2019, by = "libelle")
+# on ne garde que le libelle et le code regional
+regions_code<-regions_code%>%
+  select(libelle,reg)
 
-departements <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
-  filter(NOM %in% regions)
+reg_metropole <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
   group_by(INSEE_REG)%>%
+  rename(reg=INSEE_REG)%>%
+  mutate(reg=as.integer(reg))%>%
   summarise()
+
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+
+regions_AMR<-AMR_ville_2021%>%
+  full_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+
+# enlever le national 
+# ajouter les formes (ou enlever) des OUtres-MER
+  
+
+
+
+plotAMR<-regions_AMR%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))%>%
+
+
+
+
+
+
+
+
+
 
   
 ```
@@ -563,4 +593,4 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 
 ```
 
->>>>>>> fb219323d80eda9047c1a070348afc9e74a00fef
+
