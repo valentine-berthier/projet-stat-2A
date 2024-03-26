@@ -38,6 +38,10 @@ usage_animal <- usage_animal %>%
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 
+# Séparation en 2 familles
+AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
+AMR_animale <- AMR[which(AMR$famille=='animale'),]
+
 AMR_nationale <- AMR %>%
   filter(region == "Nationale")
 AMR_regionale <- AMR %>%
@@ -47,6 +51,11 @@ AMR_nationale_animal <- AMR_nationale %>%
   filter(famille == "animale")
 AMR_nationale_humain <- AMR_nationale %>%
   filter(famille == "humaine")
+
+# Identification et suppression des valeurs aberrantes
+AMR_humaine %>%
+  identify_outliers(`valeur AMR`)
+AMR_humaine <- AMR_humaine[-c(262),]
 
 # Indicatrice selon que la population provient d'un abattoir ou non
 AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
@@ -66,7 +75,7 @@ ResapathFrance_sansSARM <- ResapathFrance%>%
   filter(`profil AMR` != "SARM", bacterie == "Escherichia coli")
 ```
 
-## Anlayse descriptive
+## Analyse descriptive
 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
@@ -224,8 +233,8 @@ if(!require("plyr")){
 # Calculer la moyenne
 proportion_obs <- (100 - mean(table_join$taux))/100
 
-# On spécifie la proportion qu'on souhaite tester (21%)
-proportion_nulle <- 21/100
+# On spécifie la proportion qu'on souhaite tester (20%)
+proportion_nulle <- 20/100
 
 # Calculer la statistique de test z
 z_stat <- (proportion_obs - proportion_nulle) / sqrt(proportion_nulle * (1 - proportion_nulle) / nrow(table_join))
@@ -238,18 +247,7 @@ cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
 
 ```
-Avec un niveau de confiance de 95%, on peut conclure que la proportion de perte pour chaque isolat est significativement inférieure à 21%.
-
-### SIGNIFICATIVITE ?
-Peut être facilement communiqué et compris. Précision et variation suffisantes et quantification possible :
-
-```{r}
-# Regression linéaire
-modele_regression <- lm(`valeur AMR` ~ population, data = AMR_animale_fr)
-summary(modele_regression)
-```
-
-Pour valider l'intéprétation des différentes populations, on effectue une regression linéaire sur celles-ci. 
+Avec un niveau de confiance de 90%, on peut conclure que la proportion de perte pour chaque isolat est significativement inférieure à 20%.
 
 ### Validité de l'information
 
@@ -264,29 +262,43 @@ Faire une estimation des facteurs de variation (entre année, région, populatio
 La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
 
 #### 1 : Variabilité annuelle
-graphique tendance + résultat anova ?
-
-#### 2 : Variabilité entre les régions
++ test d'égalité des moyennes (student ?)
 ```{r}
+# Test de levene d'égalité de variance entre les régions (H0: variances égales)
 # On supprime les données nationales.
+if(!require("rstatix")){
+  install.packages("rstatix")
+  require("rstatix")
+}
 AMR_animale_reg <- AMR_animale[-which(AMR_animale$region=='Nationale'),]
 AMR_humaine_reg <- AMR_humaine[-which(AMR_humaine$region=='Nationale'),] 
 
-# Calcul des variances intra
-AMR_animale %>%
-  group_by(region, famille) %>%
-  summarize(
-    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
-    .groups = 'drop'
-  )
-AMR_humaine %>%
-  group_by(region, famille) %>%
-  summarize(
-    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
-    .groups = 'drop'
-  )
+AMR_humaine_reg$annee <- as.factor(AMR_humaine_reg$annee)
+AMR_animale_reg$annee <- as.factor(AMR_animale_reg$annee)
 
-# Test d'égalité de variance entre les régions (H0: variances égales)
+AMR_humaine_reg %>% levene_test(`valeur AMR` ~ annee)
+AMR_animale_reg %>% levene_test(`valeur AMR` ~ annee)
+
+# Représentation visuelle
+ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = annee)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par année pour les animaux",
+       x = "Valeur de l'AMR",
+       y = "Années") +
+  theme_minimal()
+ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = annee)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par année pour les humains",
+       x = "Valeur de l'AMR",
+       y = "Années") +
+  theme_minimal()
+```
+Pour les 2 familles, la p-valeur>0.05, il n'y a donc pas de différence significative entre les années.
+
+#### 2 : Variabilité entre les régions
++ test d'égalité des moyennes (student ?)
+```{r}
+# Test de levene d'égalité de variance entre les régions (H0: variances égales)
 AMR_humaine_reg %>% levene_test(`valeur AMR` ~ region)
 AMR_animale_reg %>% levene_test(`valeur AMR` ~ region)
 
@@ -321,8 +333,7 @@ data_anova$annee <- as.factor(data_anova$annee)
 ### Valeurs aberrantes
 data_anova %>%
   identify_outliers(`valeur AMR`)
-data_anova <- data_anova[-c(230,244,264),] # ça dégage
-
+# Aberrante mais pas extrême donc on peut la garder, surtout qu'elle s'explique bien (Guadeloupe)
 
 # Analyse 
 data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # On supprime les données nationales.
@@ -341,20 +352,20 @@ if(!require("ggpubr")){
   install.packages("ggpubr")
   require("ggpubr")
 }
-# ggqqplot(residuals(model))
-# shapiro_test(residuals(model))
+ggqqplot(residuals(model))
+shapiro_test(residuals(model))
 
 
 ### Homogénéité des variances
 data_anova %>% levene_test(`valeur AMR` ~ population)
-# data_anova %>% levene_test(`valeur AMR` ~ annee)
-# data_anova %>% levene_test(`valeur AMR` ~ region)
+data_anova %>% levene_test(`valeur AMR` ~ annee)
+data_anova %>% levene_test(`valeur AMR` ~ region)
 ```
 La variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
 F = variance.inter.groups/variance.intra.groups.
 On peut valider l'hypothèse d'homogénéité des variances pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes. Attention donc à l'interprétation. 
 Les autres hypothèses sont cependant vérifiées.
-On peut conclure sur la variabilité des régions et des années entre elles, grâce à la p-valeur<0.05.
+On peut conclure sur la variabilité des régions entre elles et des années, grâce à la p-valeur<0.05.
 
 ## Points d'intérêt de l'indicateur
 
@@ -370,17 +381,6 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(
        subtitle = "Évolution des moyennes de l'AMR",
        x = NULL,
        y = "AMR moyen",
-       color = "Population") +
-  theme_minimal()
-
-# je ne comprends pas bien la présence de ce graphique ici
-ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `effectif AMR`, group = population, color = population)) +
-  geom_line(stat = "summary", fun = "mean") +
-  geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Les effectifs en abattoir semblent constants dans le temps",
-       subtitle = "Évolution des moyennes des effectifs",
-       x = NULL,
-       y = "effectif AMR",
        color = "Population") +
   theme_minimal()
 
@@ -433,19 +433,19 @@ perform_CochranArmitageTest <- function(data, population_modalite) {
 # Appliquer la fonction pour chaque modalité de population
 modalites_population <- c("ville", "ES-hemoculture", "ES", "EHPAD")
 for (modalite in modalites_population) {
-  perform_CochranArmitageTest(AMR_humaine_fr, modalite)
+  perform_CochranArmitageTest(AMR_nationale_humain, modalite)
 }
 
 ### pour les animaux :
 # Définir les modalités de population pour AMR_animale_fr
-modalites_population_animale <- unique(AMR_animale_fr$population)
+modalites_population_animale <- unique(AMR_nationale_animal$population)
 
 # Créer une liste pour stocker les résultats des tests
 resultats_tests <- list()
 
 # Boucle sur les modalités de population animale
 for (modalite in modalites_population_animale) {
-  resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_animale_fr, modalite)
+  resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
 ```
 
