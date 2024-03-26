@@ -132,11 +132,6 @@ ggplot(AMR_animale, aes(x = region, y = `valeur AMR`)) +
 moyenne_par_region_population <- AMR_animale %>%
   group_by(region, population) %>%
   summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
-
-modele_anova <- aov(moyenne_AMR ~ region + population, data = moyenne_par_region_population)
-summary(modele_anova)
-
-# je n'arrive pas à réaliser l'analyse que je veux :()
 ```
 
 
@@ -144,6 +139,13 @@ summary(modele_anova)
 ```{r}
 AMR_animale_fr %>%
   group_by(population, famille) %>%
+  summarize(
+    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
+    .groups = 'drop'
+  )
+
+AMR_animale %>%
+  group_by(region, famille) %>%
   summarize(
     variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
     .groups = 'drop'

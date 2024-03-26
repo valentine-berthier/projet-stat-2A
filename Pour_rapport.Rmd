@@ -264,10 +264,50 @@ Faire une estimation des facteurs de variation (entre année, région, populatio
 La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
 
 #### 1 : Variabilité annuelle
+graphique tendance + résultat anova ?
 
 #### 2 : Variabilité entre les régions
+```{r}
+# On supprime les données nationales.
+AMR_animale_reg <- AMR_animale[-which(AMR_animale$region=='Nationale'),]
+AMR_humaine_reg <- AMR_humaine[-which(AMR_humaine$region=='Nationale'),] 
 
-Cartographie
+# Calcul des variances intra
+AMR_animale %>%
+  group_by(region, famille) %>%
+  summarize(
+    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
+    .groups = 'drop'
+  )
+AMR_humaine %>%
+  group_by(region, famille) %>%
+  summarize(
+    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
+    .groups = 'drop'
+  )
+
+# Test d'égalité de variance entre les régions (H0: variances égales)
+AMR_humaine_reg %>% levene_test(`valeur AMR` ~ region)
+AMR_animale_reg %>% levene_test(`valeur AMR` ~ region)
+
+# Représentation de la variabilité entre les régions
+ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = region)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par région pour les animaux",
+       x = "Valeur de l'AMR",
+       y = "Région") +
+  theme_minimal()
+ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = region)) +
+  geom_boxplot() +
+  labs(title = "Distribution de l'AMR par région pour les humains",
+       x = "Valeur de l'AMR",
+       y = "Région") +
+  theme_minimal()
+```
+Pour les animaux, on observe bien des variations entre les régions, mais ces variations ne sont pas significatives pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
+Voir l'analyse de variance pour la confirmation de l'hypothèse.
+
+ + Cartographie
 
 #### 3 : L'analyse de variance
 ```{r}
@@ -290,10 +330,6 @@ anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
 summary(anova)
 
 # Calculer les parts de variance associée à la variance totale.
-if(!require("rstatix")){
-  install.packages("rstatix")
-  require("rstatix")
-}
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 
 
@@ -310,14 +346,15 @@ if(!require("ggpubr")){
 
 
 ### Homogénéité des variances
-
-# data_anova %>% levene_test(`valeur AMR` ~ population)
+data_anova %>% levene_test(`valeur AMR` ~ population)
 # data_anova %>% levene_test(`valeur AMR` ~ annee)
 # data_anova %>% levene_test(`valeur AMR` ~ region)
 ```
-La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
-F : variance.inter.groups/variance.intra.groups.
-On peut valider l'hypothèse d'homogénéité des variances pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes. Attention donc à l'interprétation. Les autres hypothèses sont cependant vérifiées.
+La variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
+F = variance.inter.groups/variance.intra.groups.
+On peut valider l'hypothèse d'homogénéité des variances pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes. Attention donc à l'interprétation. 
+Les autres hypothèses sont cependant vérifiées.
+On peut conclure sur la variabilité des régions et des années entre elles, grâce à la p-valeur<0.05.
 
 ## Points d'intérêt de l'indicateur
 
