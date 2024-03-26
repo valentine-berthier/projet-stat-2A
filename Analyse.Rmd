@@ -386,9 +386,6 @@ Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ?
 ## Les situations et variables sont-elles contrastées ?
 
 ```{r}
-#boxplot(AMR$population ~ AMR$`valeur AMR`)
-boxplot(AMR$`valeur AMR`~AMR$population)
-
 # Réaliser la ANOVA
 data_anova <- subset(AMR_humaine, select = -c(1, 4))
 data_anova$population <- as.factor(AMR_humaine$population)
@@ -402,7 +399,10 @@ summary(anova)
 plot(anova)
 
 # autre test anova
-library(rstatix)
+if(!require("rstatix")){
+  install.packages("rstatix")
+  require("rstatix")
+}
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 
 ### Valeurs aberrantes
@@ -414,14 +414,20 @@ data_anova <- data_anova[-c(230,244,264),] # ça dégage
 # Construire le modèle linéaire
 model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
 # Créer un QQ plot des résidus
-library(ggpubr)
-ggqqplot(residuals(model))
-shapiro_test(residuals(model))
+if(!require("ggpubr")){
+  install.packages("ggpubr")
+  require("ggpubr")
+}
+# ggqqplot(residuals(model))
+# shapiro_test(residuals(model))
+
 
 ### Homogénéité des variances
-data_anova %>% levene_test(`valeur AMR` ~ population)
-data_anova %>% levene_test(`valeur AMR` ~ annee)
-data_anova %>% levene_test(`valeur AMR` ~ region)
+
+# data_anova %>% levene_test(`valeur AMR` ~ population)
+# data_anova %>% levene_test(`valeur AMR` ~ annee)
+# data_anova %>% levene_test(`valeur AMR` ~ region)
+
 # On peut valider l'hypothèse pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes.
 ```
 La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
@@ -563,23 +569,8 @@ if(!require("lmtest")){
 }
 # Effectuer le test de Breusch-Pagan
 bp_test <- bptest(reg_aux)
-# C'EST HETEROSCEDASTIQUE BORDEL
-
-#### On fait donc un GLM youpi
-# Ajuster un modèle GLM avec une structure de variance spécifiée (par exemple, Gamma ou Gaussian)
-modele_glm <- glm(`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, family = gaussian)
-
-# Obtenir un aperçu du modèle
-summary(modele_glm)
-
-# Visualiser les résidus
-plot(modele_glm, which = 1)  # Visualisation des résidus standardisés
-plot(modele_glm, which = 2)  # Visualisation des résidus quantiles
-
-# Si nécessaire, ajuster un modèle GLM avec une structure de variance spécifiée (par exemple, Gamma ou Inverse Gaussian)
-# modele_glm2 <- glm(valeur_AMR ~ Valeur_AMU + annee, data = usage_animal, family = gamma)
-# summary(modele_glm2)
-
+# C'EST HETEROSCEDASTIQUE...
 ```
 
 Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
+Cependant après une analyse les données semblent hétéroscédastique, on va donc privilégier une regression bêta.
