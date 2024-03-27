@@ -500,12 +500,14 @@ for (modalite in modalites_population_animale) {
 ## Cartographie
 
 ```{r}
+# les 3 extraits de données qui nous intéressent sont les suivants 
 
 AMR_ville_2021<-AMR%>%
   filter(population=="ville",annee=="2021")
 
 AMR_bovin_2021<-AMR%>%
   filter(population=="bovin-adulte",annee=="2021")
+
 AMR_chat_2021<-AMR%>%
   filter(population=="Chat",annee=="2021")
 
@@ -513,20 +515,10 @@ AMR_chat_2021<-AMR%>%
 
 
 ```{r}
-Regions <- st_read(dsn = extraWD, layer = "REGION",
-                            quiet = TRUE)
-```
 
-```{r}
-regions<-data.frame(unique(AMR_ville_2021$region))
-names(regions)<-"libelle"
-reg_2019<-read.csv("donnees/region2019.csv")
-
-
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
+# ETAPE 0 
+reg_2019<-read.csv("donnees/region2019.csv") # infos sur les régions : données externes
+# chargement des tracés des régions
 
 reg_metropole <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
   group_by(INSEE_REG)%>%
@@ -534,38 +526,169 @@ reg_metropole <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-
   mutate(reg=as.integer(reg))%>%
   summarise()
 
+# VILLE 2021
+# ETAPE 1
+# on récupère les régions où la valeur AMR a été calculée
+
+regions<-data.frame(unique(AMR_ville_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2
+# jointure pour faire correspondre code et region
+regions_code<-left_join(regions, reg_2019, by = "libelle")
+
+# on ne garde que le libelle et le code regional
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3
+# jointure avec les codes régionaux
 regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
 
 regions_code_poly<-regions_code_poly%>%
   rename(region=libelle)
 
 
-regions_AMR<-AMR_ville_2021%>%
+# ETAPE 4
+# Jointure finale
+regions_AMR_ville<-AMR_ville_2021%>%
   full_join(regions_code_poly,by = join_by(region))%>%
   select(region,`valeur AMR`,geometry)
+# ETAPE 5
+# on retire les régions dont on ne dispose pas les formes géométriques et la valeur NATIONALE
+R1<-regions_AMR_ville[-c(7,10,16),]
 
 
+
+# on effectue le même procédé pour les 2 autres populations
+
+# BOVIN
+#1
+regions<-data.frame(unique(AMR_bovin_2021$region))
+names(regions)<-"libelle"
+#2
+regions_code<-left_join(regions, reg_2019, by = "libelle")
+
+# on ne garde que le libelle et le code regional
+regions_code<-regions_code%>%
+  select(libelle,reg)
+#3
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+#4
+
+regions_AMR_bovin<-AMR_bovin_2021%>%
+  full_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+#5
+R2<-regions_AMR_bovin[-10,] 
+
+# CHAT&CHIEN
+#1
+regions<-data.frame(unique(AMR_chat_2021$region))
+names(regions)<-"libelle"
+#2
+regions_code<-left_join(regions, reg_2019, by = "libelle")
+
+# on ne garde que le libelle et le code regional
+regions_code<-regions_code%>%
+  select(libelle,reg)
+#3
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+#4
+regions_AMR_chienchat<-AMR_chat_2021%>%
+  full_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+#5 
+R3<-regions_AMR_chienchat[-10,]
+
+
+# REMARQUES : 
 # enlever le national 
 # ajouter les formes (ou enlever) des OUtres-MER
-  
+# il y a des NA à représenter en gris
 
+# on enlève le National
+# il y a des NA à représenter en gris
 
+# ----------------------------------------------------------------------------------
+# Représentation de la valeur AMR de la population ville en 2021 
 
-plotAMR<-regions_AMR%>%
+carteAMR1<-R1%>%
   ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))%>%
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        # Supprimer l'arrière-plan du panneau
+        panel.background = element_blank())+
+  labs(
+    title = "Valeur AMR de la population ville par régions de france métropolitaine en 2021"
+  )
+
+# Représentation de la valeur AMR de la population bovin en 2021 
+
+carteAMR2<-R2%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        # Supprimer l'arrière-plan du panneau
+        panel.background = element_blank())+
+  labs(
+    title = "Valeur AMR de la population bovin par régions de france métropolitaine en 2021"
+  )
+
+
+# Représentation de la valeur AMR de la population chien_chat en 2021 
+
+carteAMR3<-R3%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        # Supprimer l'arrière-plan du panneau
+        panel.background = element_blank())+
+  labs(
+    title = "Valeur AMR de la population chien et chat par régions de france métropolitaine en 2021"
+  )
 
 
 
 
+# A FAIRE : 
+# trouver polygone pour les O-M et ajouter les représentations
 
-
+# enlever les valeurs des axes 
+# Ajouter % à côté de la valeur AMR
+# Mettre la même échelle
+# mettre une légende pour les valeurs manquante
 
 
 
 
   
 ```
+
+```{r Représentation des cartes}
+
+carteAMR1
+carteAMR2
+carteAMR3
+
+
+```
+
 
 ## Données AMR pour la population ville de 2021
 
