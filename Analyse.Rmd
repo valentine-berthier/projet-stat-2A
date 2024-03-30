@@ -437,22 +437,25 @@ F : variance.inter.groups/variance.intra.groups.
 
 ### AMU et AMR
 
+#### Famille animale
+
 ```{r}
 usage <- read_excel("donnees/D_usage.xlsx")
-str(usage)
 usage$population <- as.factor(usage$population)
 
-usage_animal <- usage_animal %>%
+usage_animal <- usage %>%
+  filter(famille == "Animale") %>%
   arrange(population, -annee)
 ```
 
-Des regroupements entre populations ont été effectués dans ce jeu de données. Les regroupements sont : 
+Des regroupements entre populations animales ont été effectués dans ce jeu de données : 
 veau, bovin-adulte, bovin-abattoir = Bovins
 chat, chien	= Chats et chiens
 cheval = Chevaux
 volaille, volaille-abattoir	= Volailles
 porc, porc-abattoir = Porcs
 lapin = Lapins
+La pan-sensibilité est alors calculée en prenant en compte la biomasse de chaque espèce. Les calculs ont déjà été fait pour les groupes de population, mais seront peut-être à expliquer dans le rapport.
 
 ```{r}
 usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
@@ -526,7 +529,7 @@ Globalement les coefficients ne changent pas entre les deux modélisation, cepen
 
 Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle de régression bêta. Pour le modèle logit, le qqplot ne suit pas exactement la première bissectrice, il dérive vers la gauche. Il faudra mieux interpréter plus tard mais c'est un début d'interprétation.
 
-# Séparation en plusieurs modèles de régression bêta (un par population)
+### Séparation en plusieurs modèles de régression bêta (un par population)
 
 ```{r}
 for (pop in unique(usage_animal$population)){
