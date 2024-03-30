@@ -281,38 +281,46 @@ La variabilité entre les populations a déjà pu être observée dans l'analyse
 
 #### 1 : Variabilité annuelle
 + test d'égalité des moyennes (student ?)
+L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
 
 ```{r,echo=FALSE}
-# Test de levene d'égalité de variance entre les régions (H0: variances égales)
-# On supprime les données nationales.
 if(!require("rstatix")){
   install.packages("rstatix")
   require("rstatix")
 }
+
+# On supprime les données nationales
 AMR_animale_reg <- AMR_animale[-which(AMR_animale$region=='Nationale'),]
 AMR_humaine_reg <- AMR_humaine[-which(AMR_humaine$region=='Nationale'),] 
 
 AMR_humaine_reg$annee <- as.factor(AMR_humaine_reg$annee)
 AMR_animale_reg$annee <- as.factor(AMR_animale_reg$annee)
 
+ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = annee)) +
+  geom_boxplot() +
+  labs(title = "Distribution de la pan-sensibilité par année pour les animaux",
+       x = "Pan-sensibilité",
+       y = NULL) +
+  theme_minimal()
+
+ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = annee)) +
+  geom_boxplot() +
+  labs(title = "Distribution de la pan-sensibilité par année pour les humains",
+       x = "Pan-sensibilité",
+       y = NULL) +
+  theme_minimal() 
+
+# Test de levene d'égalité de variance entre les régions (H0: variances égales)
 AMR_humaine_reg %>% levene_test(`valeur AMR` ~ annee)
 AMR_animale_reg %>% levene_test(`valeur AMR` ~ annee)
 
-# Représentation visuelle
-ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = annee)) +
-  geom_boxplot() +
-  labs(title = "Distribution de l'AMR par année pour les animaux",
-       x = "Valeur de l'AMR",
-       y = "Années") +
-  theme_minimal()
-ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = annee)) +
-  geom_boxplot() +
-  labs(title = "Distribution de l'AMR par année pour les humains",
-       x = "Valeur de l'AMR",
-       y = "Années") +
-  theme_minimal()
+model <- lm(data = AMR_animale_reg, `valeur AMR` ~ annee)
+ggpubr::ggqqplot(residuals(model))
+
+ggqqplot(data = AMR_humaine_reg, "valeur AMR", facet.by = "annee")
+plot(model, 1)
 ```
-Pour les 2 familles, la p-valeur>0.05, il n'y a donc pas de différence significative entre les années.
+Pour les 2 familles, la p-valeur>0.05, on ne peux pas rejeter l'hypothèse nulle, ainsi nous n'observons pas de différence significative entre les variances des données annuelles. Par conséquent, nous pouvons supposer l’homogénéité des variances parmi les différentes années d'étude.
 
 #### 2 : Variabilité entre les régions
 + test d'égalité des moyennes (student ?)
