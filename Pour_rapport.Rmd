@@ -522,9 +522,177 @@ if(!require("cowplot")){
 }
 
 carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+
+# Cartographie des résultats de pan-S pour les bovins
+
+# ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
+regions<-data.frame(unique(AMR_bovin_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2 : jointure pour faire correspondre code et region
+regions_code<-full_join(regions, reg_2019, by = "libelle")
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3 : jointure avec les codes régionaux
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+# ETAPE 4 : jointure finale
+regions_AMR_bovin<-AMR_bovin_2021%>%
+  right_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+# ETAPE 5 : on retire les régions dont on ne dispose pas les formes géométriques et la valeur nationale
+R1_Guad<-regions_AMR_bovin[10,]
+R1_Mart<-regions_AMR_bovin[11,]
+R1_Réunion<-regions_AMR_bovin[13,]
+R1_Guyane<-regions_AMR_bovin[12,]
+R1_Mayotte<-regions_AMR_bovin[14,]
+
+R1<-regions_AMR_bovin[-c(10,11,12,13,14),] 
+
+# Représentation de la valeur AMR de la population bovin en 2021 
+
+carteAMR1<-R1%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tirets des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        panel.background = element_blank()) + 
+  labs(title = "Pan-sensibilité de la population bovin en France en 2021",
+       fill = "Pan-sensibilité")
+carteAMR1_Guad<-R1_Guad%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mart<-R1_Mart%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mayotte<-R1_Mayotte%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Guyane<-R1_Guyane%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Reunion<-R1_Reunion%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()+ theme(legend.position = "none"))
+
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+
+# Cartographie des résultats de pan-S pour les chats et chiens
+
+# ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
+regions<-data.frame(unique(AMR_chat_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2 : jointure pour faire correspondre code et region
+regions_code<-full_join(regions, reg_2019, by = "libelle")
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3 : jointure avec les codes régionaux
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+# ETAPE 4 : jointure finale
+regions_AMR_chienchat<-AMR_chat_2021%>%
+  right_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+# ETAPE 5 : on retire les régions dont on ne dispose pas les formes géométriques et la valeur nationale
+R1_Guad<-regions_AMR_chienchat[10,]
+R1_Mart<-regions_AMR_chienchat[11,]
+R1_Guyane<-regions_AMR_chienchat[12,]
+R1_Réunion<-regions_AMR_chienchat[13,]
+R1_Mayotte<-regions_AMR_chienchat[14,]
+
+R1<-regions_AMR_chienchat[-c(10,11,12,13,14),]
+
+# Représentation de la valeur AMR de la population bovin en 2021 
+
+carteAMR1<-R1%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tirets des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        panel.background = element_blank()) + 
+  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
+       fill = "Pan-sensibilité")
+carteAMR1_Guad<-R1_Guad%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mart<-R1_Mart%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mayotte<-R1_Mayotte%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Guyane<-R1_Guyane%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Reunion<-R1_Reunion%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()+ theme(legend.position = "none"))
+
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 ```
-
-
 
 #### 4 : L'analyse de variance
 
@@ -597,7 +765,7 @@ Nous obtenons plus ou moins les nênes résultats, l'année n'explique que très
 
 ## Points d'intérêt de l'indicateur
 
-### Identification de tendances
+### 1 : Identification de tendances
 
 Spageti plot et tests de tendance -> pour montrer que des tendances identifiables
 
@@ -606,9 +774,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Hausse générale de la sensibilité des populations en abattoir",
-       subtitle = "Évolution des moyennes de l'AMR",
        x = NULL,
-       y = "AMR moyen",
+       y = "Pan-sensibilité moyenne",
        color = "Population") +
   theme_minimal()
 
@@ -616,16 +783,26 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
-       subtitle = "Évolution des moyennes de l'AMR",
        x = NULL,
-       y = "AMR moyen",
+       y = "Pan-sensibilité moyenne",
+       color = "Population") +
+  theme_minimal()
+
+ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Augmentation de la sensibilité aux antibiotiques des populations humaines",
+       x = NULL,
+       y = "Pan-sensibilité moyenne",
        color = "Population") +
   theme_minimal()
 ```
-#### Tests de tendance
+
+#### 2 : Tests de tendance
+
+Le test de Cochran Armitage est utilisé ici. Il serait intéressant de faire un test unilatéral droit plutôt que bilatéral, car ce qu'on souhaite c'est observer une baisse de la sensibilité (mais bon comme dit en réunion, c'est clairement pas ce qu'on voit sur nos graphiques).
 
 ```{r}
-############### COCHRAN ARMITAGE
 # Chargement des bibliothèques
 library(dplyr)
 library(DescTools)
@@ -634,25 +811,19 @@ library(DescTools)
 perform_CochranArmitageTest <- function(data, population_modalite) {
   # Filtrer les données pour la modalité spécifiée
   matrice <- data %>% filter(population == population_modalite)
-  
   # Calculer les valeurs Pan-sensible et Non Pan-sensible pour chaque année
-  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR` * `effectif AMR` / 100,
-                                 non_pan_sensible = `effectif AMR` - pan_sensible)
-  
+  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR`*`effectif AMR`/100,
+                                non_pan_sensible = `effectif AMR`-pan_sensible)
   # Ordonner par année
   matrice <- matrice[order(matrice$annee), ]
-  
   # Sélectionner les colonnes pertinentes
   matrice <- matrice[, c("annee", "pan_sensible", "non_pan_sensible")]
-  
   # Transposer la matrice et nommer les colonnes avec les années
   matrice <- t(matrice)
   colnames(matrice) <- as.character(matrice[1, ])
   matrice <- matrice[-1, ]
-  
   # Convertir les années en numérique
   colnames(matrice) <- as.numeric(colnames(matrice))
-  
   # Afficher le résultat du test de Cochran-Armitage
   cat("Résultats pour la modalité", population_modalite, ":\n")
   print(CochranArmitageTest(matrice))
@@ -667,114 +838,13 @@ for (modalite in modalites_population) {
 ### pour les animaux :
 # Définir les modalités de population pour AMR_animale_fr
 modalites_population_animale <- unique(AMR_nationale_animal$population)
-
 # Créer une liste pour stocker les résultats des tests
 resultats_tests <- list()
-
 # Boucle sur les modalités de population animale
 for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
 ```
-
-## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
-
-
-
-
-```{r}
-
-
-
-# REMARQUES : 
-# enlever le national 
-# ajouter les formes (ou enlever) des OUtres-MER
-# il y a des NA à représenter en gris
-
-# on enlève le National
-# il y a des NA à représenter en gris
-
-# ----------------------------------------------------------------------------------
-# Représentation de la valeur AMR de la population ville en 2021 
-
-carteAMR1<-R1%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population ville par régions de france métropolitaine en 2021"
-  )
-
-# Représentation de la valeur AMR de la population bovin en 2021 
-
-carteAMR2<-R2%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population bovin par régions de france métropolitaine en 2021"
-  )
-
-
-# Représentation de la valeur AMR de la population chien_chat en 2021 
-
-carteAMR3<-R3%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population chien et chat par régions de france métropolitaine en 2021"
-  )
-
-
-
-
-# A FAIRE : 
-# trouver polygone pour les O-M et ajouter les représentations
-
-# enlever les valeurs des axes 
-# Ajouter % à côté de la valeur AMR
-# Mettre la même échelle
-# mettre une légende pour les valeurs manquante
-
-
-
-
-  
-```
-
-```{r Représentation des cartes}
-
-carteAMR1
-carteAMR2
-carteAMR3
-
-
-```
-
-
-## Données AMR pour la population ville de 2021
-
-## Données AMR pour la population bovin de 2021
-
-
-## Données AMR pour la population chien&chat de 2021
-
 
 ### Lien à l'usage
 
@@ -786,5 +856,3 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 ```{r}
 
 ```
-
-
