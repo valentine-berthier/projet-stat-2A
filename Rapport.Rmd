@@ -709,12 +709,14 @@ reg_2019<-read.csv("donnees/region2019.csv") # infos sur les régions : données
 france_metropolitaine<-c(1,2,3,4,5,6,7,8,9,10,11,12,13)
 
 
-reg_metropole<-sf::read_sf("donnees/ADMIN-EXPRESS-COG-CARTO_3-2__SHP_WGS84G_FRA_2024-02-22/ADMIN-EXPRESS-COG-CARTO/1_DONNEES_LIVRAISON_2024-03-00171/ADECOGC_3-2_SHP_WGS84G_FRA-ED2024-02-22/REGION.shp")%>%
-  group_by(INSEE_REG)%>%
-  rename(reg=INSEE_REG)%>%
-  mutate(reg=as.integer(reg))%>%
-  select(NOM,reg,geometry)
-  
+#reg_metropole<-sf::read_sf("donnees/ADMIN-EXPRESS-COG-CARTO_3-2__SHP_WGS84G_FRA_2024-02-22/ADMIN-EXPRESS-COG-CARTO/1_DONNEES_LIVRAISON_2024-03-00171/ADECOGC_3-2_SHP_#WGS84G_FRA-ED2024-02-22/REGION.shp")%>%
+#  group_by(INSEE_REG)%>%
+#  rename(reg=INSEE_REG)%>%
+#  mutate(reg=as.integer(reg))%>%
+#  select(NOM,reg,geometry)
+# save(reg_metropole,file="donnees/reg_metropole.rdata")
+
+load("donnees/reg_metropole.rdata") 
 
 # VILLE 2021
 # ETAPE 1
