@@ -121,7 +121,7 @@ Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont un
 ### Possibilité de calcul de la pan-S
 
 Taille du jeu de données (nombre moyen d’isolats considérés)
-Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population 
+Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population
 
 #### Taille du jeu de données
 ```{r echo=TRUE}
@@ -141,7 +141,7 @@ boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_
        caption = str_glue("Cohorte : population humaine au niveau National\nLecture : On observe des pertes non négligeables pour toutes les populations lors du passage de l'étude\nNationale à régionale. On en conclut que beaucoup de régions n'ont pas les effectifs nécessaires pour\ns'inscrire dans les rapports (minimum 30)"))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-        
+
 boxplot_taux
 
 AMR %>%
@@ -269,7 +269,6 @@ p_value <- pnorm(z_stat)
 cat("Proportion observée:", proportion_obs, "\n")
 cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
-
 ```
 Avec un niveau de confiance de 90%, on peut conclure que la proportion de perte pour chaque isolat est significativement inférieure à 20%.
 
