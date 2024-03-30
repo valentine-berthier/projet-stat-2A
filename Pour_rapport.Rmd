@@ -92,6 +92,25 @@ usage_humain <- usage %>%
   arrange(population, -annee)
 ```
 
+### Transformation pour la cartographie
+
+```{r}
+# On ne s'intéresse quà 3 extraits de données
+
+AMR_ville_2021<-AMR%>%
+  filter(population=="ville",annee=="2021")
+
+AMR_bovin_2021<-AMR%>%
+  filter(population=="bovin-adulte",annee=="2021")
+
+AMR_chat_2021<-AMR%>%
+  filter(population=="Chat",annee=="2021")
+
+
+# Etape 0 : chargement des tracés des régions
+reg_2019<-read.csv("donnees/region2019.csv") # données externes d'infos sur les régions
+```
+
 
 ## Analyse descriptive
 
@@ -277,52 +296,47 @@ représenter des boxplots par population des estimations régionales annuelles (
 Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
 Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
 
-La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
+#### 1 : Variabilité par population
 
-#### 1 : Variabilité annuelle
+La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, concentrons-nous sur l'étude de l'homogénéité des variances et des moyennes par groupe.
+
+```{r}
+# Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
+AMR_humaine %>% levene_test(`valeur AMR` ~ population)
+AMR_animale %>% levene_test(`valeur AMR` ~ population)
+```
+Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
+
+#### 2 : Variabilité annuelle
 + test d'égalité des moyennes (student ?)
 L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
 
 ```{r,echo=FALSE}
-if(!require("rstatix")){
-  install.packages("rstatix")
-  require("rstatix")
-}
+AMR_animale$annee <- as.factor(AMR_animale$annee)
+AMR_humaine$annee <- as.factor(AMR_humaine$annee)
 
-# On supprime les données nationales
-AMR_animale_reg <- AMR_animale[-which(AMR_animale$region=='Nationale'),]
-AMR_humaine_reg <- AMR_humaine[-which(AMR_humaine$region=='Nationale'),] 
-
-AMR_humaine_reg$annee <- as.factor(AMR_humaine_reg$annee)
-AMR_animale_reg$annee <- as.factor(AMR_animale_reg$annee)
-
-ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = annee)) +
+ggplot(AMR_animale, aes(x = `valeur AMR`, y = annee)) +
   geom_boxplot() +
   labs(title = "Distribution de la pan-sensibilité par année pour les animaux",
        x = "Pan-sensibilité",
        y = NULL) +
   theme_minimal()
 
-ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = annee)) +
+ggplot(AMR_humaine, aes(x = `valeur AMR`, y = annee)) +
   geom_boxplot() +
   labs(title = "Distribution de la pan-sensibilité par année pour les humains",
        x = "Pan-sensibilité",
-       y = NULL) +
+       y = NULL, 
+       caption = "Uniquement les données régionales") +
   theme_minimal() 
 
-# Test de levene d'égalité de variance entre les régions (H0: variances égales)
-AMR_humaine_reg %>% levene_test(`valeur AMR` ~ annee)
-AMR_animale_reg %>% levene_test(`valeur AMR` ~ annee)
-
-model <- lm(data = AMR_animale_reg, `valeur AMR` ~ annee)
-ggpubr::ggqqplot(residuals(model))
-
-ggqqplot(data = AMR_humaine_reg, "valeur AMR", facet.by = "annee")
-plot(model, 1)
+# Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
+AMR_humaine %>% levene_test(`valeur AMR` ~ annee)
+AMR_animale %>% levene_test(`valeur AMR` ~ annee)
 ```
 Pour les 2 familles, la p-valeur>0.05, on ne peux pas rejeter l'hypothèse nulle, ainsi nous n'observons pas de différence significative entre les variances des données annuelles. Par conséquent, nous pouvons supposer l’homogénéité des variances parmi les différentes années d'étude.
 
-#### 2 : Variabilité entre les régions
+#### 3 : Variabilité entre les régions
 + test d'égalité des moyennes (student ?)
 
 ```{r}
@@ -331,69 +345,91 @@ AMR_humaine_reg %>% levene_test(`valeur AMR` ~ region)
 AMR_animale_reg %>% levene_test(`valeur AMR` ~ region)
 
 # Représentation de la variabilité entre les régions
-ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = region)) +
+ggplot(AMR_animale, aes(x = `valeur AMR`, y = region)) +
   geom_boxplot() +
   labs(title = "Distribution de l'AMR par région pour les animaux",
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
-ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = region)) +
+ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
   geom_boxplot() +
   labs(title = "Distribution de l'AMR par région pour les humains",
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
 ```
-Pour les animaux, on observe bien des variations entre les régions, mais ces variations ne sont pas significatives pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
-Voir l'analyse de variance pour la confirmation de l'hypothèse.
+Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
 
  + Cartographie
 
-#### 3 : L'analyse de variance
+#### 4 : L'analyse de variance
+
+#### Humain
+
 ```{r}
-# On récupère les données et on les met en forme pour l'analyse
-data_anova <- subset(AMR_humaine, select = -c(1, 4))
-data_anova$population <- as.factor(AMR_humaine$population)
-data_anova$region <- as.factor(AMR_humaine$region)
+data_anova <- AMR_humaine %>%
+  select(annee, population, region, `valeur AMR`) %>%
+  filter(region != "Nationale") # On supprime les données nationales pour permettre d'insérer le regroupement régional dans l'analyse
+
+data_anova$population <- as.factor(data_anova$population)
+data_anova$region <- as.factor(data_anova$region)
 data_anova$annee <- as.factor(data_anova$annee)
 
+# Les hypothèses à vérifier avant l'anova
 
-### Valeurs aberrantes
+## 1 - Identification des éventuelles valeurs aberrantes
 data_anova %>%
-  identify_outliers(`valeur AMR`)
-# Aberrante mais pas extrême donc on peut la garder, surtout qu'elle s'explique bien (Guadeloupe)
+  identify_outliers(`valeur AMR`) # Aberrante mais pas extrême donc on peut la garder, c'est la valeur pour la Guadeloupe qui est un cas particulier de base
 
-# Analyse 
-data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # On supprime les données nationales.
-anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
-summary(anova)
+## 2 - Hypothèse de normalité
+model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
+ggpubr::ggqqplot(residuals(model))
+model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
+ggpubr::ggqqplot(residuals(model))
+model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
+ggpubr::ggqqplot(residuals(model))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+
+## 3 - Hypothèse d’homogénéité des variances
+# Hypothèse vérifiée pour la variable annee mais pas pour la variable region. Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes.
 
 # Calculer les parts de variance associée à la variance totale.
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
-
-
-### Hypothèse de normalité
-# Construire le modèle linéaire
-model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
-# Créer un QQ plot des résidus
-if(!require("ggpubr")){
-  install.packages("ggpubr")
-  require("ggpubr")
-}
-ggqqplot(residuals(model))
-shapiro_test(residuals(model))
-
-
-### Homogénéité des variances
-data_anova %>% levene_test(`valeur AMR` ~ population)
-data_anova %>% levene_test(`valeur AMR` ~ annee)
-data_anova %>% levene_test(`valeur AMR` ~ region)
 ```
-La variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
-F = variance.inter.groups/variance.intra.groups.
-On peut valider l'hypothèse d'homogénéité des variances pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes. Attention donc à l'interprétation. 
-Les autres hypothèses sont cependant vérifiées.
-On peut conclure sur la variabilité des régions entre elles et des années, grâce à la p-valeur<0.05.
+La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
+
+#### Animal
+
+```{r}
+data_anova <- AMR_animale %>%
+  select(annee, population, region, `valeur AMR`) %>%
+  filter(region != "Nationale") # On supprime les données nationales pour permettre d'insérer le regroupement régional dans l'analyse
+
+data_anova$population <- as.factor(data_anova$population)
+data_anova$region <- as.factor(data_anova$region)
+data_anova$annee <- as.factor(data_anova$annee)
+
+# Les hypothèses à vérifier avant l'anova
+
+## 1 - Identification des éventuelles valeurs aberrantes
+data_anova %>%
+  identify_outliers(`valeur AMR`) # Pas de valeur aberrante
+
+## 2 - Hypothèse de normalité
+model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
+ggpubr::ggqqplot(residuals(model))
+model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
+ggpubr::ggqqplot(residuals(model))
+model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
+ggpubr::ggqqplot(residuals(model))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+
+## 3 - Hypothèse d’homogénéité des variances
+# Hypothèse vérifiée pour les variables annees et regions dans les parties 1 et 2 du critère
+
+# Calculer les parts de variance associée à la variance totale.
+anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
+```
+
+Nous obtenons plus ou moins les nênes résultats, l'année n'explique que très peu la variabilité des données alors que la population explique la quasi totalité de la variabilité de la pan-S dans la famille animale.
 
 ## Points d'intérêt de l'indicateur
 
@@ -479,115 +515,11 @@ for (modalite in modalites_population_animale) {
 
 ## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
 
-## Cartographie
 
-```{r}
-# les 3 extraits de données qui nous intéressent sont les suivants 
-
-AMR_ville_2021<-AMR%>%
-  filter(population=="ville",annee=="2021")
-
-AMR_bovin_2021<-AMR%>%
-  filter(population=="bovin-adulte",annee=="2021")
-
-AMR_chat_2021<-AMR%>%
-  filter(population=="Chat",annee=="2021")
-
-```
 
 
 ```{r}
 
-# ETAPE 0 
-reg_2019<-read.csv("donnees/region2019.csv") # infos sur les régions : données externes
-# chargement des tracés des régions
-
-reg_metropole <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
-  group_by(INSEE_REG)%>%
-  rename(reg=INSEE_REG)%>%
-  mutate(reg=as.integer(reg))%>%
-  summarise()
-
-# VILLE 2021
-# ETAPE 1
-# on récupère les régions où la valeur AMR a été calculée
-
-regions<-data.frame(unique(AMR_ville_2021$region))
-names(regions)<-"libelle"
-
-# ETAPE 2
-# jointure pour faire correspondre code et region
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-
-# ETAPE 3
-# jointure avec les codes régionaux
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-
-
-# ETAPE 4
-# Jointure finale
-regions_AMR_ville<-AMR_ville_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-# ETAPE 5
-# on retire les régions dont on ne dispose pas les formes géométriques et la valeur NATIONALE
-R1<-regions_AMR_ville[-c(7,10,16),]
-
-
-
-# on effectue le même procédé pour les 2 autres populations
-
-# BOVIN
-#1
-regions<-data.frame(unique(AMR_bovin_2021$region))
-names(regions)<-"libelle"
-#2
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-#3
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-#4
-
-regions_AMR_bovin<-AMR_bovin_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-#5
-R2<-regions_AMR_bovin[-10,] 
-
-# CHAT&CHIEN
-#1
-regions<-data.frame(unique(AMR_chat_2021$region))
-names(regions)<-"libelle"
-#2
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-#3
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-#4
-regions_AMR_chienchat<-AMR_chat_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-#5 
-R3<-regions_AMR_chienchat[-10,]
 
 
 # REMARQUES : 
@@ -680,13 +612,6 @@ carteAMR3
 ## Données AMR pour la population chien&chat de 2021
 
 
-
-
-
-
-
-
-=======
 ### Lien à l'usage
 
 Regression beta ou correlation sur lien entre usage et resistance à echelle nationale dans temps pour chaque population et à échelle régionale pour homme (modèles de panel ?). 
