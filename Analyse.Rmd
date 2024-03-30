@@ -587,7 +587,7 @@ for (pop in unique(usage_humain$population)){
 }
 ```
 
-Il faudra voir pourquoi on mets du log pour les valeurs AMU et peut-être qu'il faudrait ajouter les régions à l'analyse car elles influent également sur les résultats (mais pour le moment j'ai une erreur si j'ajoute région...)
+Il faudra voir pourquoi on mets du log pour les valeurs AMU et peut-être qu'il faudrait ajouter les régions à l'analyse car elles influent également sur les résultats (mais pour le moment j'ai une erreur si j'ajoute région...). On peut tester la significativité des coefficients car je les trouve très proches de 0.
 
 # Modèle de panel 
 ```{r}
