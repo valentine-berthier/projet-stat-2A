@@ -1,0 +1,22 @@
+N_reg_insc, Ensemble,1 - LibÃ©raux exclusifs,2 - Mixtes,3 - SalariÃ©s hospitaliers,4 - Autres salariÃ©s
+ Ensemble,336.47,151.14,39.68,104.59,41.06
+01 - Guadeloupe,292.9,130.03,24.04,109.87,28.95
+02 - Martinique,289.71,127.22,28.75,106.34,27.4
+03 - Guyane,209.04,63.65,10.78,111.65,22.96
+04 - La Réunion,329.46,178.59,12.76,110.75,27.37
+06 - Mayotte,77.58,13.44,0.77,59.53,3.84
+11 - Île-de-France,392.16,140.55,59.52,133.94,58.14
+24 - Centre –Val de Loire,262.25,121.95,28.15,81.66,30.49
+27 - Bourgogne-Franche-Comté,296.76,123.28,39.19,98.67,35.62
+28 - Normandie,286.21,125.26,30.45,98.81,31.68
+32 - Hauts de France,299.51,132.44,32.81,96.34,37.92
+44 - Grand Est,318.57,143.76,40.81,98.91,35.09
+52 - Pays de la Loire,289.1,141.53,26.51,87.63,33.43
+53 - Bretagne,320.76,150.42,28.5,104.65,37.19
+75 - Nouvelle Aquitaine,337.9,167.4,34.86,96,39.64
+76 - Occitanie,355.42,184.74,37.77,91.37,41.55
+84 - Auvergne-Rhône-Alpes,339.25,152.5,37.92,109.39,39.44
+93 - Provence-Alpes-Côte d’Azur,406.54,211.21,49.82,100.98,44.53
+94 - Corse,308.2,167.33,29.42,81.14,30.31
+"Champ :  France entiÃ¨re, Source : ASIP-Sante RPPS - traitements Drees - donnees au 1er janvier 2019La densite est exprimee en nombre de professionnels pour 100 000 habitants. ","","","","",""
+TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
