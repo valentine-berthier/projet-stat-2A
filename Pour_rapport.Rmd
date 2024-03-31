@@ -767,7 +767,7 @@ Nous obtenons plus ou moins les nênes résultats, l'année n'explique que très
 
 ## Points d'intérêt de l'indicateur
 
-### 1 : Identification de tendances
+### Identification de tendances
 
 Spageti plot et tests de tendance -> pour montrer que des tendances identifiables
 
@@ -800,7 +800,7 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
   theme_minimal()
 ```
 
-#### 2 : Tests de tendance
+#### 1 : Tests de tendance
 
 Le test de Cochran Armitage est utilisé ici sur la proportion d'indivdius pan-sensibles parmi les effectifs testés. Ce test n'est approprié que lorsqu'une variable a deux niveaux et que l'autre variable est ordinale. Dans notre cas, la variable binomiale est la proportion de pan-sensible séparée en nombre de pan-sensible et nombre de résistants. La variable ordinale correspond aux années de l'étude. L'hypothèse nulle du test est qu'il n'y a pas de tendance observable dans les données.
 
@@ -991,3 +991,5 @@ Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeu
 Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
 
 Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
+
+### Robustesse de l'indicateur
