@@ -857,6 +857,137 @@ Voir s’il faut tester un décalage dans le temps (lien meilleur si prend usage
 Voir s’il faut tester le lien à l’usage décomposé par famille antibiotique (et non somme globale -> déterminer une famille qui jouerait plus particulièrement)
 Significativité attendue et force du lien (part de variabilité expliquée par usage ? aire sous courbe ROC ?).
 
-```{r}
+#### 1 : Visualisation
 
+```{r}
+usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
+
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
+  geom_path(size = 0.8)+
+  geom_point(aes(colour = path), size = 1)+
+  theme_minimal()+
+  theme(legend.position = "top")+
+  labs(x = "Pan-S",
+       y = "Usage d'antibiotiques",
+       title = "L'usage d'antiotique semble avoir un effet sur la pan-sensibilité des animaux",
+       caption = "Note de lecture : En 2012, les porcs avaient une valeur d'usage de 1 pour une pan-sensibilité d'environ 22.5%",
+       subtitle = "Pan-sensibilité par population animale et usage d'antibiotique",
+       color = "Année du test de Pan-S")+
+  scale_color_manual(values = c("between" = "black", "Start (2012)" = "green", "End (2021)" = "red"))+
+  facet_wrap(~population, scales = "free")
+
+usage_humain <- usage_humain %>%
+  group_by(annee, population) %>%
+  mutate(AMU_moyen = mean(`valeur AMU`),
+         AMR_moyen = mean(`valeur AMR`, na.rm = TRUE))
+
+usage_humain$path <- ifelse(usage_humain$annee == 2012 & usage_humain$population == "ville", "Start", ifelse(usage_humain$annee == 2015 & usage_humain$population == "EHPAD", "Start", ifelse(usage_humain$annee == 2018 & usage_humain$population == "ES", "Start", ifelse(usage_humain$annee == 2021, "End", "between"))))
+
+ggplot(data = usage_humain, aes(x = AMR_moyen, y = AMU_moyen))+
+  geom_path(size = 0.8)+
+  geom_point(aes(colour = path), size = 1)+
+  theme_minimal()+
+  theme(legend.position = "top")+
+  labs(x = "Pan-S",
+       y = "Usage d'antibiotiques",
+       title = "L'usage d'antiotique a un effet sur la pan-sensibilité en EHPAD et en ville",
+       caption = "Note de lecture : En 2012, un usage d'antibiotique de 140 DDD/1000 habitants/jour pour la population de ville a\nentrainé une sensibilité de 47%.",
+       subtitle = "Pan-sensibilité par population humaine et usage d'antibiotique",
+       color = "Année du test de Pan-S")+
+  scale_color_manual(values = c("between" = "black", "Start" = "green", "End" = "red"))+
+  facet_wrap(~population, scales = "free")
 ```
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
+
+Pour les populations humaines, on observe nettement que l'usage d'antibiotique entraine une baisse de la sensibilité. On observe également que les antibiotiques sont de moins en moins utilisé, et donc cela augmente la sensibilité à ceux-ci.
+
+#### 2 : Coefficient de corrélation
+
+```{r}
+for (pop in unique(usage_humain$population)){
+  usage_humain_na <- na.omit(usage_humain[which(usage_humain$population == pop),])
+  print(paste(pop, round(cor(usage_humain_na$`valeur AMR`[which(usage_humain_na$population == pop)], usage_humain_na$`valeur AMU`[which(usage_humain_na$population == pop)]), 4), sep = " : "))
+  rm(usage_humain_na)
+}
+
+for (pop in unique(usage_animal$population)){
+  print(paste(pop, round(cor(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], usage_animal$`valeur AMU`[which(usage_animal$population == pop)]), 4), sep = " : "))
+}
+```
+L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les populations, sauf la population bovine pour laquelle la corrélation est dans le sens inverse Nous observons des corrélations entre 40% et 80%, nous pouvons estimer le fait qu'un lien entre l'usage et la sensibilité est bien présent.
+
+#### 3 : Régression bêta
+
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Il faudra utiliser la fonction betareg du package de même nom.
+
+```{r}
+# Les hypothèses à valider avant d'utiliser la régression bêta
+
+# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
+usage_animal <- usage_animal %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+usage_humain <- usage_humain %>%
+  filter(!is.na(`valeur AMR`)) %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+
+# 1 : On vérifie que les données AMR sont hétéroscédastiques 
+ggplot(data = usage_animal)+
+  geom_boxplot(aes(x = `valeur AMR`, y = population))+
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
+  theme_minimal()+
+  labs(title = "Dispertion des valeurs AMR")
+
+ggplot(data = usage_humain)+
+  geom_boxplot(aes(x = `valeur AMR`, y = population), na.rm = TRUE)+
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
+  theme_minimal()+
+  labs(title = "Dispertion des valeurs AMR")
+
+# 2 : La variable de résistance doit suivre une loi bêta
+# Regardons la modélisation d'une loi bêta suivant les valeurs de pan-sensibilité de chaque population
+
+for (pop in unique(usage_animal$population)){
+  mu <- mean(usage_animal$`valeur AMR`[which(usage_animal$population == pop)])
+  phi <- (mu * (1 - mu)) / var(usage_animal$`valeur AMR`[which(usage_animal$population == pop)]) - 1
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  hist(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
+  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+}
+
+for (pop in unique(usage_humain$population)){
+  mu <- mean(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE)
+    phi <- (mu * (1 - mu)) / var(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE) - 1
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  hist(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
+  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+}
+
+# On fait la régression bêta
+
+# Charger le package nécessaire pour les modèles de régression bêta
+if(!require("betareg")){
+  install.packages("betareg")
+  library("betareg")
+}
+# Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
+  print(pop)
+  print(summary(model_beta))
+}
+for (pop in unique(usage_humain$population)){
+  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit")
+  print(pop)
+  print(summary(model_beta))
+}
+```
+
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
+
+Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
+
+Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.

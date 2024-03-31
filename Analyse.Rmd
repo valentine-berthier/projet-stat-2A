@@ -559,7 +559,7 @@ ggplot(data = usage_humain)+
   labs(title = "Dispertion des valeurs AMR")
 ```
 
-Nous observons des données hétéroscédastiques par population, en EHPAS la variance est bien plus grande qu'en ville. Il sera possible de tester ce critère à l'aide d'un test d'homoscédasticité. De plus, on ne remarque pas de données proche des bornes de l'intervalle, cela justifie également le fait d'utiliser une régression bêta.
+Nous observons des données hétéroscédastiques par population, en EHPAD la variance est bien plus grande qu'en ville. Il sera possible de tester ce critère à l'aide d'un test d'homoscédasticité. De plus, on ne remarque pas de données proche des bornes de l'intervalle, cela justifie également le fait d'utiliser une régression bêta.
 
 ```{r}
 # Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
