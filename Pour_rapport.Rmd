@@ -440,12 +440,14 @@ regions<-data.frame(unique(AMR_ville_2021$region))
 names(regions)<-"libelle"
 
 # ETAPE 2 : jointure pour faire correspondre code et region
-regions_code<-full_join(regions, reg_2019, by = "libelle")
+regions_code<-full_join(regions, as.data.frame(reg_2019), by = "libelle")
 regions_code<-regions_code%>%
   select(libelle,reg)
 
 # ETAPE 3 : jointure avec les codes régionaux
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+
+library(sf)
+regions_code_poly<-right_join(regions_code, st_as_sf(reg_metropole), by = "reg")
 regions_code_poly<-regions_code_poly%>%
   rename(region=libelle)
 
@@ -516,9 +518,9 @@ carteAMR1_Reunion<-R1_Reunion%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank()+ theme(legend.position = "none"))
 
-if(!require("cowplot")){
-  install.packages("cowplot")
-  library("cowplot")
+if(!require("patchwork")){
+  install.packages("patchwork")
+  library("patchwork")
 }
 
 carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
@@ -715,11 +717,11 @@ data_anova %>%
 
 ## 2 - Hypothèse de normalité
 model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
-ggpubr::ggqqplot(residuals(model))
+ggpubr::ggqqplot(residuals(model_pop))
 model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
-ggpubr::ggqqplot(residuals(model))
+ggpubr::ggqqplot(residuals(model_reg))
 model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
-ggpubr::ggqqplot(residuals(model))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
 
 ## 3 - Hypothèse d’homogénéité des variances
 # Hypothèse vérifiée pour la variable annee mais pas pour la variable region. Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes.
@@ -748,11 +750,11 @@ data_anova %>%
 
 ## 2 - Hypothèse de normalité
 model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
-ggpubr::ggqqplot(residuals(model))
+ggpubr::ggqqplot(residuals(model_pop))
 model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
-ggpubr::ggqqplot(residuals(model))
+ggpubr::ggqqplot(residuals(model_reg))
 model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
-ggpubr::ggqqplot(residuals(model))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
 
 ## 3 - Hypothèse d’homogénéité des variances
 # Hypothèse vérifiée pour les variables annees et regions dans les parties 1 et 2 du critère
@@ -800,7 +802,9 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
 
 #### 2 : Tests de tendance
 
-Le test de Cochran Armitage est utilisé ici. Il serait intéressant de faire un test unilatéral droit plutôt que bilatéral, car ce qu'on souhaite c'est observer une baisse de la sensibilité (mais bon comme dit en réunion, c'est clairement pas ce qu'on voit sur nos graphiques).
+Le test de Cochran Armitage est utilisé ici sur la proportion d'indivdius pan-sensibles parmi les effectifs testés. Ce test n'est approprié que lorsqu'une variable a deux niveaux et que l'autre variable est ordinale. Dans notre cas, la variable binomiale est la proportion de pan-sensible séparée en nombre de pan-sensible et nombre de résistants. La variable ordinale correspond aux années de l'étude. L'hypothèse nulle du test est qu'il n'y a pas de tendance observable dans les données.
+
+Nous choisissons l'hypothèse alternative unilatérale car ce que nous cherchons à tester est qu'une baisse de la sensibilité apparaît au fil du temps.
 
 ```{r}
 # Chargement des bibliothèques
@@ -826,7 +830,7 @@ perform_CochranArmitageTest <- function(data, population_modalite) {
   colnames(matrice) <- as.numeric(colnames(matrice))
   # Afficher le résultat du test de Cochran-Armitage
   cat("Résultats pour la modalité", population_modalite, ":\n")
-  print(CochranArmitageTest(matrice))
+  print(CochranArmitageTest(matrice, alternative = "one.sided"))
 }
 
 # Appliquer la fonction pour chaque modalité de population
