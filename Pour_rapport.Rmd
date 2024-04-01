@@ -763,7 +763,7 @@ ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en gra
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 ```
 
-Nous obtenons plus ou moins les nênes résultats, l'année n'explique que très peu la variabilité des données alors que la population explique la quasi totalité de la variabilité de la pan-S dans la famille animale.
+Nous obtenons plus ou moins les mêmes résultats, l'année n'explique que très peu la variabilité des données alors que la population explique la quasi totalité de la variabilité de la pan-S dans la famille animale.
 
 ## Points d'intérêt de l'indicateur
 
@@ -927,6 +927,13 @@ for (pop in unique(usage_animal$population)){
   print(pop)
   print(summary(model_glm))
 }
+
+for (pop in unique(usage_humain$population)){
+  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, family = binomial(link = "logit"))
+  print(pop)
+  print(summary(model_glm))
+}
 ```
 
 Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Plus précisément, le point d'attention, qui permet de justifier l'utilisation de la régression bêta et que nos tests ne sont pas réalisés sur des échantillons que nous pouvons considérer comme réellement indépendants. Effectivement, l'échantillon sélectionné dans chaque région et pour chaque année, ont des ressemblances dû au fait qu'ils appartiennent à la même région déjà, et du fait qu'ils proviennent éventuellement du même abattoir pour les animaux. Il faudra utiliser la fonction betareg du package de même nom.
@@ -988,12 +995,14 @@ for (pop in unique(usage_animal$population)){
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
   print(pop)
   print(summary(model_beta))
+  print(AIC(model_beta))
 }
 for (pop in unique(usage_humain$population)){
   usage_filtre <- usage_humain[which(usage_humain$population == pop),]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit")
   print(pop)
   print(summary(model_beta))
+  print(AIC(model_beta))
 }
 ```
 
@@ -1001,7 +1010,7 @@ Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeu
 
 Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
 
-Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
+Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
 
 ### Robustesse de l'indicateur
 
