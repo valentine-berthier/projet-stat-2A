@@ -994,3 +994,49 @@ Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons 
 
 ### Robustesse de l'indicateur
 
+### Lien à d'autres variables
+
+#### 1 : Analyse factorielle
+
+```{r}
+rm(list=ls())
+AMR<-read_xlsx("donnees/donnees_AMR.xlsx")
+familles<-unique(AMR$famille)
+AMR_animale<-AMR%>%
+  filter(famille==familles[1])
+AMR_humaine<-AMR%>%
+  filter(famille==familles[2])
+```
+
+Dans cette partie, nous nous intéréssons aux données annexes susceptibles d'influencer le taux de bactérie Escherichia coli pan-sensibles.
+Après avoir observé une trop grande perte d'effectif lors de l'étude régionale des données portant sur la famille animale, l'étude nationale sera également retenue dans cette partie. En revanche, une étude au niveau régionale sera faite pour les populations de la famille humaine.
+Les facteurs qui ont été étudiés sont les suivants : 
+- La pollution
+- Les facteurs socio-économiques (PIB,Revenu par habitant)
+- L'accès au soins
+- Les caractéristiques géographiques des territoires et le climat
+- Le tourisme
+- Les infrastructures
+- Les caractéristiques démographiques
+- Les caractéristiques agricoles 
+- L'hygiène biosécurité et la prévention 
+
+Les jeux de données ont été remis aux propres dans analyse val 
+
+
+## Densité de médecin 
+
+```{r}
+load("donnees/cofacteurs/densite_med.rdata")
+load("donnees/reg_metropole.rdata") 
+reg_metropole_sans_poly<-reg_metropole%>%
+  rename(region="NOM",nreg="reg")%>%
+  select(region,nreg)%>%
+  mutate(nreg=as.character(nreg))
+  
+table<-AMR%>%
+  left_join(reg_metropole_sans_poly)
+table<-table%>%
+  filter(region!="Nationale")
+table<-table%>%
+  left_join(densite_med,by=c("nreg","annee"))
