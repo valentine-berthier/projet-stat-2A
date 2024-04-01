@@ -993,3 +993,4 @@ Il sera également possible d'affirmer cette hypothèses avec un test d'homoscé
 Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
 
 ### Robustesse de l'indicateur
+
