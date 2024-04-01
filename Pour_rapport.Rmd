@@ -918,7 +918,18 @@ L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les popula
 
 #### 3 : Régression bêta
 
-Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Il faudra utiliser la fonction betareg du package de même nom.
+Pour bien comprendre que nous devons utiliser une régression bêta, se pencher sur les résults d'une régression logit généralisée et comparer les déviances des deux modèles.
+
+```{r}
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit")) # Une fonction de lien logit est le choix le plus adapté pour des données comprises entre 0 et 1, AMR se comporte comme une loi binomiale comme c'est équivalent à la proportion de sensibles.
+  print(pop)
+  print(summary(model_glm))
+}
+```
+
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Plus précisément, le point d'attention, qui permet de justifier l'utilisation de la régression bêta et que nos tests ne sont pas réalisés sur des échantillons que nous pouvons considérer comme réellement indépendants. Effectivement, l'échantillon sélectionné dans chaque région et pour chaque année, ont des ressemblances dû au fait qu'ils appartiennent à la même région déjà, et du fait qu'ils proviennent éventuellement du même abattoir pour les animaux. Il faudra utiliser la fonction betareg du package de même nom.
 
 ```{r}
 # Les hypothèses à valider avant d'utiliser la régression bêta
