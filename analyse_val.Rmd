@@ -534,3 +534,132 @@ La différence entre les effectifs nationaux et régionaux pour les population h
 
 
 ## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
+
+
+
+
+
+# ANALYSE COFACTEURS (mise au propre des jeux de données)
+
+## Densité de médecin par régions
+```{r}
+library(readr)
+library(dplyr)
+densite_med_2012 <- read_csv("donnees/cofacteurs/densite_med_2012.csv")
+summary(densite_med_2012)
+densite_med_2012<-densite_med_2012[-c(20,21),]
+# Comme substr ne marche pas, on le fait à la main 
+nreg<-c("National","1","2","3","4","6","11","24","27","28","32","44","52","53","75","76","84","93","94")
+
+
+densite_med_2012<-densite_med_2012%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2012,19))
+
+
+densite_med_2013 <- read_csv("donnees/cofacteurs/densite_med_2013.csv")
+densite_med_2013<-densite_med_2013[-c(20,21),]
+densite_med_2013<-densite_med_2013%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2013,19))
+
+densite_med_2014 <- read_csv("donnees/cofacteurs/densite_med_2014.csv")
+densite_med_2014<-densite_med_2014[-c(20,21),]
+densite_med_2014<-densite_med_2014%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2014,19))
+
+densite_med_2015 <- read_csv("donnees/cofacteurs/densite_med_2015.csv")
+densite_med_2015<-densite_med_2015[-c(20,21),]
+densite_med_2015<-densite_med_2015%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2015,19))
+
+densite_med_2016 <- read_csv("donnees/cofacteurs/densite_med_2016.csv")
+densite_med_2016<-densite_med_2016[-c(20,21),]
+densite_med_2016<-densite_med_2016%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2016,19))
+
+densite_med_2017 <- read_csv("donnees/cofacteurs/densite_med_2017.csv")
+densite_med_2017<-densite_med_2017[-c(20,21),]
+densite_med_2017<-densite_med_2017%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2017,19))
+
+densite_med_2018 <- read_csv("donnees/cofacteurs/densite_med_2018.csv")
+densite_med_2018<-densite_med_2018[-c(20,21),]
+densite_med_2018<-densite_med_2018%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2018,19))
+
+densite_med_2019 <- read_csv("donnees/cofacteurs/densite_med_2019.csv")
+densite_med_2019<-densite_med_2019[-c(20,21),]
+densite_med_2019<-densite_med_2019%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2019,19))
+
+densite_med_2020 <- read_csv("donnees/cofacteurs/densite_med_2020.csv")
+densite_med_2020<-densite_med_2020[-c(20,21),]
+densite_med_2020<-densite_med_2020%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2020,19))
+
+densite_med_2021 <- read_csv("donnees/cofacteurs/densite_med_2021.csv")
+densite_med_2021<-densite_med_2021[-c(20,21),]
+densite_med_2021<-densite_med_2021%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2021,19))
+
+densite_med_2022 <- read_csv("donnees/cofacteurs/densite_med_2022.csv")
+densite_med_2022<-densite_med_2022[-c(20,21),]
+densite_med_2022<-densite_med_2022%>%
+  mutate(nreg=nreg)%>%
+  select(nreg,Ensemble)%>%
+  rename(Densite="Ensemble")%>%
+  mutate(annee=rep(2022,19))
+
+
+densite_med<-densite_med_2012%>%
+  full_join(densite_med_2013)%>%
+  full_join(densite_med_2014)%>%
+  full_join(densite_med_2015)%>%
+  full_join(densite_med_2016)%>%
+  full_join(densite_med_2017)%>%
+  full_join(densite_med_2018)%>%
+  full_join(densite_med_2019)%>%
+  full_join(densite_med_2020)%>%
+  full_join(densite_med_2021)%>%
+  full_join(densite_med_2022)
+
+
+
+densite_med<-densite_med%>%
+  rename(Densite_med="Densite")
+save(densite_med,file="donnees/cofacteurs/densite_med.rdata")
+
+
+
+
+```
+
