@@ -663,3 +663,39 @@ save(densite_med,file="donnees/cofacteurs/densite_med.rdata")
 
 ```
 
+```{r}
+GES<-read_csv("donnees/cofacteurs/inventaire_GES.csv")
+# en tonne d'équivalents CO2
+GES<-GES%>%
+  select(`Unité de mesure`,TIME_PERIOD,OBS_VALUE,)
+
+save(GES,file="donnees/cofacteurs/emission_ges.rdata")
+
+
+ODD_REG <- read_delim("donnees/cofacteurs/ODD_REG.csv", 
++     delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+Evol_nb_degjours_REG<-ODD_REG%>%
+  filter(no_indic=="i096",variable=="climat_dju_nb")%>%
+  select(codgeo,libgeo,A2012,A2013,A2014,A2015,A2016,A2017,A2018,A2019,A2020,A2021,A2022)
+
+nreg<-c("1","2","3","4","6","11","24","27","28","32","44","52","53","75","76","84","93","94")
+Evol_nb_degjours_REG$codgeo<-nreg
+
+save(Evol_nb_degjours_REG,file="donnees/cofacteurs/nb_degjours_REG.rdata")
+
+PIB_revenu_national <- read_excel("donnees/cofacteurs/PIB_revenu_national.xlsx",sheet = "T_1115")
+
+PIB_revenu_national<-PIB_revenu_national[4:13,]
+colnames(PIB_revenu_national)<-PIB_revenu_national[1,]
+PIB_revenu_national<-PIB_revenu_national[-c(1,2),]
+
+PIB_revenu_national_12_21<-PIB_revenu_national%>%
+  select( "NA","NA","2012","2013" ,"2014", "2015" ,"2016", "2017" ,"2018","2019" ,"2020", "2021" ,"2022")
+
+library(data.table)
+PIB_revenu_national_12_21<-transpose(PIB_revenu_national_12_21)
+
+```
+
+
