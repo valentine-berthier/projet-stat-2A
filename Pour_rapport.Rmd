@@ -1000,9 +1000,12 @@ for (pop in unique(usage_animal$population)){
   print(summary(model_beta))
   print(AIC(model_beta))
 }
-for (pop in unique(usage_humain$population)){
-  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit")
+usage_humain_reg <- usage_humain %>%
+  filter(annee != 2018 | region != "La Réunion")
+
+for (pop in unique(usage_humain_reg$population)){
+  usage_filtre <- usage_humain_reg[which(usage_humain_reg$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
@@ -1035,7 +1038,7 @@ Dans cette partie, nous nous intéréssons aux données annexes susceptibles d'i
 Après avoir observé une trop grande perte d'effectif lors de l'étude régionale des données portant sur la famille animale, l'étude nationale sera également retenue dans cette partie. En revanche, une étude au niveau régionale sera faite pour les populations de la famille humaine.
 Les facteurs qui ont été étudiés sont les suivants : 
 - La pollution
-- Les facteurs socio-économiques (PIB,Revenu par habitant)
+- Les facteurs socio-économiques (PIB, Revenu par habitant)
 - L'accès au soins
 - Les caractéristiques géographiques des territoires et le climat
 - Le tourisme
