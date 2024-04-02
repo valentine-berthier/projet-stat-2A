@@ -8,12 +8,15 @@ bibliography : projet-stat-2A.bib
 
 ```{r setup,echo=FALSE,include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 library(readxl)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(stringr)
 library(rstatix)
+
+rm(list=ls())
 ```
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
@@ -22,19 +25,9 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 
 ## Importation des données et transformation des variables
 
+### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
-
-# Données permettant d'étudier la perte d'effectif des pan-sensibles
-ResapathFrance <- read_xlsx("donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",sheet = "Modele de collecte")
-
-# Données d'usage d'antibiotiques
-usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
-
-usage_animal$population <- as.factor(usage_animal$population)
-
-usage_animal <- usage_animal %>%
-  arrange(population, -annee)
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
@@ -64,6 +57,13 @@ AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$populati
 AMR$famille2 <- paste(AMR$famille, ifelse(grepl("abattoir", AMR$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
 
 AMR_regionale$famille2 <- paste(AMR_regionale$famille, ifelse(grepl("abattoir", AMR_regionale$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
+```
+
+### Données Résapath effectif de pan-sensibles
+
+```{r}
+# Données permettant d'étudier la perte animale d'effectif des pan-sensibles
+ResapathFrance <- read_xlsx("donnees/ModeleCollecte_PROMISE_ResapathFrance.xlsx",sheet = "Modele de collecte")
 
 # Uniformisation entre les différentes tables
 ResapathFrance <- ResapathFrance%>%
@@ -74,7 +74,59 @@ ResapathFrance <- ResapathFrance%>%
 # On retire les observations SARM (ça supprime aussi les lignes vide)
 ResapathFrance_sansSARM <- ResapathFrance%>%
   filter(`profil AMR` != "SARM", bacterie == "Escherichia coli")
+
+# Dans ModeleHUM1, on observe les données de la population : EHPAD et ville
+ModeleHUM1 <- read_xlsx(
+  "donnees/ModeleCollecte_PROMISE_MedQual-2012-2017.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+ModeleHUM1<-ModeleHUM1%>%
+  mutate(population=as.factor(population),`profil AMR`=as.factor(`profil AMR`))
+
+# Dans ModeleHUM1, on observe les données de la population : ES et ES-hemoculture
+ModeleHUM2 <- read_xlsx(
+  "donnees/SPARES_Donnees AMR_08122022.xlsx",
+  sheet = "Modele de collecte", #nom de la page à garder
+)
+ModeleHUM2<-ModeleHUM2%>%
+  mutate(population=as.factor(population),`profil AMR`=as.factor(`profil AMR`))
 ```
+
+### Données d'usage
+
+```{r}
+usage <- read_excel("donnees/D_usage.xlsx")
+
+usage$population <- as.factor(usage$population)
+usage_animal <- usage %>%
+  filter(famille == "Animale") %>%
+  arrange(population, -annee)
+usage_humain <- usage %>%
+  filter(famille == "Humaine") %>%
+  select(population, annee, region, `valeur AMU`) %>%
+  left_join(AMR_humaine[,-c(1, 4)], by = join_by(region, annee, population)) %>%
+  arrange(population, -annee)
+```
+
+### Transformation pour la cartographie
+
+```{r}
+# On ne s'intéresse quà 3 extraits de données
+
+AMR_ville_2021<-AMR%>%
+  filter(population=="ville",annee=="2021")
+
+AMR_bovin_2021<-AMR%>%
+  filter(population=="bovin-adulte",annee=="2021")
+
+AMR_chat_2021<-AMR%>%
+  filter(population=="Chat",annee=="2021")
+
+# chargement des tracés des régions
+reg_2019<-read.csv("donnees/region2019.csv") # données externes d'infos sur les régions
+load("donnees/reg_metropole.rdata") 
+```
+
 
 ## Analyse descriptive
 
@@ -123,7 +175,7 @@ Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont un
 Taille du jeu de données (nombre moyen d’isolats considérés)
 Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population
 
-#### Taille du jeu de données
+#### 1 : Taille du jeu de données
 ```{r echo=TRUE}
 print(paste("nombre moyen d'isolats considérés en France entière: ", round(mean(AMR_nationale$`effectif AMR`), 0)))
 print(paste("nombre moyen d'isolats considérés en découpage par région: ", round(mean(AMR_regionale$`effectif AMR`), 0)))
@@ -132,6 +184,7 @@ AMR %>%
   group_by(population, annee, region) %>%
   summarise(`nombre moyen d'isolats` = round(mean(`effectif AMR`), 0))%>%
   arrange(desc(`nombre moyen d'isolats`))
+<<<<<<< HEAD
 
 boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
   geom_boxplot() +
@@ -144,10 +197,12 @@ boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_
 
 boxplot_taux
 
+=======
+>>>>>>> 4a73da870eff62fe71ce1d33b41102399a7c9201
 AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
-  arrange(desc(`nombre de régions`))
+arrange(desc(`nombre de régions`))
 ```
 
 Par population et année, il y a, en moyenne, 24331 isolats. Plus on avance dans le temps, plus on a d'isolats considérés dans les analyses.
@@ -170,10 +225,6 @@ AMR_perte_regionale_animal <- AMR_perte_regionale %>%
   filter(!is.na(perte))%>%
   filter(!(population %in% c("ville", "EHPAD", "ES", "ES-hemoculture")))
 
-effectifs_totaux_humain<-effectifs_totaux_humain%>%
-  mutate(taux_eff_perte=(diff_effectif/effectif_total_national)*100)%>%
-  group_by(annee,population)
-
 AMR_perte_regionale_humain <- AMR_perte_regionale %>%
   mutate(perte = 1 - effectif_regional/effectif_national) %>%
   filter(!is.na(perte))%>%
@@ -185,14 +236,7 @@ label <- c("Chien", "Veau", "Chat", "Bovin", "Cheval", "Volaille-abattoir", "Din
 
 ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte)) +
   geom_boxplot() +
-  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
-       x = "Population étudiée",
-       y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : Pour chaque population, on observe une perte d'effectif de moins d'1%"))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,1))
-boxplot_taux
-
-geom_hline(yintercept = mean(AMR_perte_regionale_animal$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
+  geom_hline(yintercept = mean(AMR_perte_regionale_animal$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
   labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
        y = "Taux d'effectif perdu",
@@ -204,7 +248,7 @@ geom_hline(yintercept = mean(AMR_perte_regionale_animal$perte), color = "darkgre
 
 ggplot(AMR_perte_regionale_humain, aes(x = reorder(population, perte), y = perte)) +
   geom_hline(yintercept = mean(AMR_perte_regionale_humain$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
-  geom_boxplot() +
+  geom_boxplot(na.rm = TRUE) +
   labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
        y = "Taux d'effectif perdu",
@@ -212,11 +256,10 @@ ggplot(AMR_perte_regionale_humain, aes(x = reorder(population, perte), y = perte
   scale_y_continuous(labels = scales::label_percent(scale = 100), limits = c(0,0.01))+
   annotate("text", x = 0.7, y = 0.0014, label = "Mean = 0.09%", colour = "darkgreen", size = 3.3)+
   scale_x_discrete(labels = c("ES", "ES-hemoculture", "Ville", "EHPAD"))
-
 ```
 La différence entre les effectifs nationaux et régionaux pour les population humaines sont de l'ordre de 1% et constitue donc une part négligeable à l'étude. L'étude au niveau régionale ne constitue donc pas un risque en terme de perte d'information. Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
 
-#### Perte d’information liée aux souches pour lesquelles ce n’est pas calculable
+#### 2 : Perte d’information liée aux souches pour lesquelles ce n’est pas calculable
 
 ```{r,echo=FALSE}
 table1 <- ResapathFrance_sansSARM %>%
@@ -239,7 +282,7 @@ label <- c("Veau", "Chat", "Chien", "Cheval", "Bovin", "Porc", "Poulet", "Dinde"
 ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   geom_boxplot() +
   geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
-  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
+  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
        caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13 % des animaux étudiés n'ont pas un profil de résistance pan-sensible."))+
@@ -247,7 +290,55 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
-# Test de proportion
+
+```{r}
+table1 <- ModeleHUM1 %>%
+  filter(`profil AMR` == "pan-sensible", bacterie=="Escherichia coli") %>%
+  group_by(annee, population, region)%>%
+  mutate(eff_pansensible=sum(`effectif AMR`))%>%
+  select(annee, population, region, eff_pansensible)
+table2 <- ModeleHUM1 %>%
+  filter(`profil AMR` == "C3G-R",bacterie=="Escherichia coli") %>%
+  group_by(annee, population, region)%>%
+  mutate(eff_C3G=sum(`effectif AMR`))%>%
+  select(annee, population, region, eff_C3G)
+
+table3 <- ModeleHUM2 %>%
+  filter(`profil AMR` == "pan-sensible",bacterie=="Escherichia coli") %>%
+  group_by(annee, population, region)%>%
+  mutate(eff_pansensible=sum(`effectif AMR`))%>%
+  select(annee, population, region, eff_pansensible)
+table4 <- ModeleHUM2 %>%
+  filter(`profil AMR` == "C3G-R",bacterie=="Escherichia coli") %>%
+  group_by(annee, population, region)%>%
+  mutate(eff_C3G=sum(`effectif AMR`))%>%
+  select(annee, population, region, eff_C3G)
+
+tableX <- merge(table1, table2, by = c("annee", "population","region"), all = TRUE)
+tableY <- merge(table3, table4, by = c("annee", "population","region"), all = TRUE)
+table <- rbind(tableX,tableY)
+
+rm(table1, table2, table3, table4, tableX, tableY)
+
+table<-table%>%
+  mutate(taux=(eff_pansensible/eff_C3G)*100)
+
+moyenne<-mean(table$taux,na.rm = TRUE) 
+
+ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 100 - moyenne, color = "darkgreen", linetype = "dashed", size = 0.8) +
+  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
+       x = NULL,
+       y = "Taux de perte",
+       caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible."))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+  scale_x_discrete(labels = population)+
+  annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
+```
+
+#### 3 : Test de proportion
+
 ```{r}
 if(!require("plyr")){
   install.packages("plyr")
@@ -266,16 +357,24 @@ z_stat <- (proportion_obs - proportion_nulle) / sqrt(proportion_nulle * (1 - pro
 # Calculer la valeur p pour un test unilatéral à gauche
 p_value <- pnorm(z_stat)
 
+print("animaux")
 cat("Proportion observée:", proportion_obs, "\n")
 cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
-```
-Avec un niveau de confiance de 90%, on peut conclure que la proportion de perte pour chaque isolat est significativement inférieure à 20%.
+<<<<<<< HEAD
+=======
 
-```{r,echo=FALSE}
-table_join<-table_join%>%
-  mutate(taux=(eff_pansensible/eff_C3G)*100)
+proportion_obs <- (100 - mean(table$taux, na.rm = TRUE))/100
+proportion_nulle <- 15/100
+z_stat <- (proportion_obs - proportion_nulle) / sqrt(proportion_nulle * (1 - proportion_nulle) / nrow(table_join))
+p_value <- pnorm(z_stat)
+print("humains")
+cat("Proportion observée:", proportion_obs, "\n")
+cat("Statistique de test z:", z_stat, "\n")
+cat("P-valeur:", p_value, "\n")
+>>>>>>> 4a73da870eff62fe71ce1d33b41102399a7c9201
 ```
+Avec un niveau de confiance de 94%, on peut conclure que la proportion de perte pour chaque isolat animal est significativement inférieure à 20%. Pour la famille humaine, nous pouvons conclure, au niveau de confiance de 99% que la proportion de perte dûe aux tests de pan-sensibilité est significativement inférieure à 15%.
 
 ### Validité de l'information
 
@@ -287,114 +386,402 @@ représenter des boxplots par population des estimations régionales annuelles (
 Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
 Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
 
-La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, observons dans cette partie, uniquement les tendances régionales et annuelles.
+#### 1 : Variabilité par population
 
-#### 1 : Variabilité annuelle
+La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, concentrons-nous sur l'étude de l'homogénéité des variances et des moyennes par groupe.
+
+```{r}
+# Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
+AMR_humaine %>% levene_test(`valeur AMR` ~ population)
+AMR_animale %>% levene_test(`valeur AMR` ~ population)
+```
+Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
+
+#### 2 : Variabilité annuelle
 + test d'égalité des moyennes (student ?)
+L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
 
 ```{r,echo=FALSE}
-# Test de levene d'égalité de variance entre les régions (H0: variances égales)
-# On supprime les données nationales.
-if(!require("rstatix")){
-  install.packages("rstatix")
-  require("rstatix")
-}
-AMR_animale_reg <- AMR_animale[-which(AMR_animale$region=='Nationale'),]
-AMR_humaine_reg <- AMR_humaine[-which(AMR_humaine$region=='Nationale'),] 
+AMR_animale$annee <- as.factor(AMR_animale$annee)
+AMR_humaine$annee <- as.factor(AMR_humaine$annee)
 
-AMR_humaine_reg$annee <- as.factor(AMR_humaine_reg$annee)
-AMR_animale_reg$annee <- as.factor(AMR_animale_reg$annee)
-
-AMR_humaine_reg %>% levene_test(`valeur AMR` ~ annee)
-AMR_animale_reg %>% levene_test(`valeur AMR` ~ annee)
-
-# Représentation visuelle
-ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = annee)) +
+ggplot(AMR_animale, aes(x = `valeur AMR`, y = annee)) +
   geom_boxplot() +
-  labs(title = "Distribution de l'AMR par année pour les animaux",
-       x = "Valeur de l'AMR",
-       y = "Années") +
+  labs(title = "Distribution de la pan-sensibilité par année pour les animaux",
+       x = "Pan-sensibilité",
+       y = NULL) +
   theme_minimal()
-ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = annee)) +
+
+ggplot(AMR_humaine, aes(x = `valeur AMR`, y = annee)) +
   geom_boxplot() +
-  labs(title = "Distribution de l'AMR par année pour les humains",
-       x = "Valeur de l'AMR",
-       y = "Années") +
-  theme_minimal()
+  labs(title = "Distribution de la pan-sensibilité par année pour les humains",
+       x = "Pan-sensibilité",
+       y = NULL, 
+       caption = "Uniquement les données régionales") +
+  theme_minimal() 
+
+# Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
+AMR_humaine %>% levene_test(`valeur AMR` ~ annee)
+AMR_animale %>% levene_test(`valeur AMR` ~ annee)
 ```
-Pour les 2 familles, la p-valeur>0.05, il n'y a donc pas de différence significative entre les années.
+Pour les 2 familles, la p-valeur>0.05, on ne peux pas rejeter l'hypothèse nulle, ainsi nous n'observons pas de différence significative entre les variances des données annuelles. Par conséquent, nous pouvons supposer l’homogénéité des variances parmi les différentes années d'étude.
 
-#### 2 : Variabilité entre les régions
+#### 3 : Variabilité entre les régions
 + test d'égalité des moyennes (student ?)
+
 ```{r}
 # Test de levene d'égalité de variance entre les régions (H0: variances égales)
-AMR_humaine_reg %>% levene_test(`valeur AMR` ~ region)
-AMR_animale_reg %>% levene_test(`valeur AMR` ~ region)
+AMR_humaine %>% levene_test(`valeur AMR` ~ region)
+AMR_animale %>% levene_test(`valeur AMR` ~ region)
 
 # Représentation de la variabilité entre les régions
-ggplot(AMR_animale_reg, aes(x = `valeur AMR`, y = region)) +
+ggplot(AMR_animale, aes(x = `valeur AMR`, y = region)) +
   geom_boxplot() +
   labs(title = "Distribution de l'AMR par région pour les animaux",
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
-ggplot(AMR_humaine_reg, aes(x = `valeur AMR`, y = region)) +
+ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
   geom_boxplot() +
   labs(title = "Distribution de l'AMR par région pour les humains",
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
 ```
-Pour les animaux, on observe bien des variations entre les régions, mais ces variations ne sont pas significatives pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
-Voir l'analyse de variance pour la confirmation de l'hypothèse.
+Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
 
- + Cartographie
-
-#### 3 : L'analyse de variance
 ```{r}
-# On récupère les données et on les met en forme pour l'analyse
-data_anova <- subset(AMR_humaine, select = -c(1, 4))
-data_anova$population <- as.factor(AMR_humaine$population)
-data_anova$region <- as.factor(AMR_humaine$region)
+# Cartographie des résultats de pan-S en ville
+
+# ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
+regions<-data.frame(unique(AMR_ville_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2 : jointure pour faire correspondre code et region
+regions_code<-full_join(regions, as.data.frame(reg_2019), by = "libelle")
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3 : jointure avec les codes régionaux
+
+library(sf)
+regions_code_poly<-right_join(regions_code, st_as_sf(reg_metropole), by = "reg")
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+# ETAPE 4 : jointure finale
+regions_AMR_ville<-AMR_ville_2021%>%
+  right_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+# ETAPE 5 : on retire les régions dont on ne dispose pas les formes géométriques et la valeur nationale
+R1_Guad<-regions_AMR_ville[7,]
+R1_Mart<-regions_AMR_ville[10,]
+R1_Guyane<-regions_AMR_ville[16,]
+R1_Reunion<-regions_AMR_ville[17,]
+R1_Mayotte<-regions_AMR_ville[18,]
+
+R1<-regions_AMR_ville[-c(7,10,16,17,18),]
+
+# Représentation de la valeur AMR de la population ville en 2021 
+
+carteAMR1<-R1%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tirets des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        panel.background = element_blank()) + 
+  labs(title = "Pan-sensibilité de la population ville en France en 2021",
+       fill = "Pan-sensibilité")
+carteAMR1_Guad<-R1_Guad%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mart<-R1_Mart%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mayotte<-R1_Mayotte%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Guyane<-R1_Guyane%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Reunion<-R1_Reunion%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()+ theme(legend.position = "none"))
+
+if(!require("patchwork")){
+  install.packages("patchwork")
+  library("patchwork")
+}
+
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+
+# Cartographie des résultats de pan-S pour les bovins
+
+# ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
+regions<-data.frame(unique(AMR_bovin_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2 : jointure pour faire correspondre code et region
+regions_code<-full_join(regions, reg_2019, by = "libelle")
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3 : jointure avec les codes régionaux
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+# ETAPE 4 : jointure finale
+regions_AMR_bovin<-AMR_bovin_2021%>%
+  right_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+# ETAPE 5 : on retire les régions dont on ne dispose pas les formes géométriques et la valeur nationale
+R1_Guad<-regions_AMR_bovin[10,]
+R1_Mart<-regions_AMR_bovin[11,]
+R1_Réunion<-regions_AMR_bovin[13,]
+R1_Guyane<-regions_AMR_bovin[12,]
+R1_Mayotte<-regions_AMR_bovin[14,]
+
+R1<-regions_AMR_bovin[-c(10,11,12,13,14),] 
+
+# Représentation de la valeur AMR de la population bovin en 2021 
+
+carteAMR1<-R1%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tirets des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        panel.background = element_blank()) + 
+  labs(title = "Pan-sensibilité de la population bovin en France en 2021",
+       fill = "Pan-sensibilité")
+carteAMR1_Guad<-R1_Guad%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mart<-R1_Mart%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mayotte<-R1_Mayotte%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Guyane<-R1_Guyane%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Reunion<-R1_Reunion%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()+ theme(legend.position = "none"))
+
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+
+# Cartographie des résultats de pan-S pour les chats et chiens
+
+# ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
+regions<-data.frame(unique(AMR_chat_2021$region))
+names(regions)<-"libelle"
+
+# ETAPE 2 : jointure pour faire correspondre code et region
+regions_code<-full_join(regions, reg_2019, by = "libelle")
+regions_code<-regions_code%>%
+  select(libelle,reg)
+
+# ETAPE 3 : jointure avec les codes régionaux
+regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
+regions_code_poly<-regions_code_poly%>%
+  rename(region=libelle)
+
+# ETAPE 4 : jointure finale
+regions_AMR_chienchat<-AMR_chat_2021%>%
+  right_join(regions_code_poly,by = join_by(region))%>%
+  select(region,`valeur AMR`,geometry)
+
+# ETAPE 5 : on retire les régions dont on ne dispose pas les formes géométriques et la valeur nationale
+R1_Guad<-regions_AMR_chienchat[10,]
+R1_Mart<-regions_AMR_chienchat[11,]
+R1_Guyane<-regions_AMR_chienchat[12,]
+R1_Réunion<-regions_AMR_chienchat[13,]
+R1_Mayotte<-regions_AMR_chienchat[14,]
+
+R1<-regions_AMR_chienchat[-c(10,11,12,13,14),]
+
+# Représentation de la valeur AMR de la population bovin en 2021 
+
+carteAMR1<-R1%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), # on supprime les petits tirets des axes
+        panel.grid.major = element_blank(), # on supprime la grille
+        panel.grid.minor = element_blank(), # on supprime la grille
+        panel.background = element_blank()) + 
+  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
+       fill = "Pan-sensibilité")
+carteAMR1_Guad<-R1_Guad%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mart<-R1_Mart%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Mayotte<-R1_Mayotte%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Guyane<-R1_Guyane%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank(),legend.position = "none")
+carteAMR1_Reunion<-R1_Reunion%>%
+  ggplot() +
+  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()+ theme(legend.position = "none"))
+
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+```
+
+#### 4 : L'analyse de variance
+
+#### Humain
+
+```{r}
+data_anova <- AMR_humaine %>%
+  select(annee, population, region, `valeur AMR`) %>%
+  filter(region != "Nationale") # On supprime les données nationales pour permettre d'insérer le regroupement régional dans l'analyse
+
+data_anova$population <- as.factor(data_anova$population)
+data_anova$region <- as.factor(data_anova$region)
 data_anova$annee <- as.factor(data_anova$annee)
 
+# Les hypothèses à vérifier avant l'anova
 
-### Valeurs aberrantes
+## 1 - Identification des éventuelles valeurs aberrantes
 data_anova %>%
-  identify_outliers(`valeur AMR`)
-# Aberrante mais pas extrême donc on peut la garder, surtout qu'elle s'explique bien (Guadeloupe)
+  identify_outliers(`valeur AMR`) # Aberrante mais pas extrême donc on peut la garder, c'est la valeur pour la Guadeloupe qui est un cas particulier de base
 
-# Analyse 
-data_anova <- data_anova[-which(AMR_humaine$region=='Nationale'),] # On supprime les données nationales.
-anova <- aov(`valeur AMR` ~ population + region + annee, data = data_anova)
-summary(anova)
+## 2 - Hypothèse de normalité
+model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
+ggpubr::ggqqplot(residuals(model_pop))
+model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
+ggpubr::ggqqplot(residuals(model_reg))
+model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
+ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+
+## 3 - Hypothèse d’homogénéité des variances
+# Hypothèse vérifiée pour la variable annee mais pas pour la variable region. Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes.
 
 # Calculer les parts de variance associée à la variance totale.
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
-
-
-### Hypothèse de normalité
-# Construire le modèle linéaire
-model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
-# Créer un QQ plot des résidus
-if(!require("ggpubr")){
-  install.packages("ggpubr")
-  require("ggpubr")
-}
-ggqqplot(residuals(model))
-shapiro_test(residuals(model))
-
-
-### Homogénéité des variances
-data_anova %>% levene_test(`valeur AMR` ~ population)
-data_anova %>% levene_test(`valeur AMR` ~ annee)
-data_anova %>% levene_test(`valeur AMR` ~ region)
 ```
-La variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
-F = variance.inter.groups/variance.intra.groups.
-On peut valider l'hypothèse d'homogénéité des variances pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes. Attention donc à l'interprétation. 
-Les autres hypothèses sont cependant vérifiées.
-On peut conclure sur la variabilité des régions entre elles et des années, grâce à la p-valeur<0.05.
+La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
+
+#### Animal
+
+```{r}
+data_anova <- AMR_animale %>%
+  select(annee, population, region, `valeur AMR`) %>%
+  filter(region != "Nationale") # On supprime les données nationales pour permettre d'insérer le regroupement régional dans l'analyse
+
+data_anova$population <- as.factor(data_anova$population)
+data_anova$region <- as.factor(data_anova$region)
+data_anova$annee <- as.factor(data_anova$annee)
+
+# Les hypothèses à vérifier avant l'anova
+
+## 1 - Identification des éventuelles valeurs aberrantes
+data_anova %>%
+  identify_outliers(`valeur AMR`) # Pas de valeur aberrante
+
+## 2 - Hypothèse de normalité
+model_pop <- lm(`valeur AMR` ~ population, data = data_anova)
+ggpubr::ggqqplot(residuals(model_pop))
+model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
+ggpubr::ggqqplot(residuals(model_reg))
+model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
+ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+
+## 3 - Hypothèse d’homogénéité des variances
+# Hypothèse vérifiée pour les variables annees et regions dans les parties 1 et 2 du critère
+
+# Calculer les parts de variance associée à la variance totale.
+anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
+```
+
+Nous obtenons plus ou moins les mêmes résultats, l'année n'explique que très peu la variabilité des données alors que la population explique la quasi totalité de la variabilité de la pan-S dans la famille animale.
 
 ## Points d'intérêt de l'indicateur
 
@@ -407,9 +794,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Hausse générale de la sensibilité des populations en abattoir",
-       subtitle = "Évolution des moyennes de l'AMR",
        x = NULL,
-       y = "AMR moyen",
+       y = "Pan-sensibilité moyenne",
        color = "Population") +
   theme_minimal()
 
@@ -417,16 +803,28 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
-       subtitle = "Évolution des moyennes de l'AMR",
        x = NULL,
-       y = "AMR moyen",
+       y = "Pan-sensibilité moyenne",
+       color = "Population") +
+  theme_minimal()
+
+ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+  geom_line(stat = "summary", fun = "mean") +
+  geom_point(stat = "summary", fun = "mean", size = 2) +
+  labs(title = "Augmentation de la sensibilité aux antibiotiques des populations humaines",
+       x = NULL,
+       y = "Pan-sensibilité moyenne",
        color = "Population") +
   theme_minimal()
 ```
-#### Tests de tendance
+
+#### 1 : Tests de tendance
+
+Le test de Cochran Armitage est utilisé ici sur la proportion d'indivdius pan-sensibles parmi les effectifs testés. Ce test n'est approprié que lorsqu'une variable a deux niveaux et que l'autre variable est ordinale. Dans notre cas, la variable binomiale est la proportion de pan-sensible séparée en nombre de pan-sensible et nombre de résistants. La variable ordinale correspond aux années de l'étude. L'hypothèse nulle du test est qu'il n'y a pas de tendance observable dans les données.
+
+Nous choisissons l'hypothèse alternative unilatérale car ce que nous cherchons à tester est qu'une baisse de la sensibilité apparaît au fil du temps.
 
 ```{r}
-############### COCHRAN ARMITAGE
 # Chargement des bibliothèques
 library(dplyr)
 library(DescTools)
@@ -435,28 +833,22 @@ library(DescTools)
 perform_CochranArmitageTest <- function(data, population_modalite) {
   # Filtrer les données pour la modalité spécifiée
   matrice <- data %>% filter(population == population_modalite)
-  
   # Calculer les valeurs Pan-sensible et Non Pan-sensible pour chaque année
-  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR` * `effectif AMR` / 100,
-                                 non_pan_sensible = `effectif AMR` - pan_sensible)
-  
+  matrice <- matrice %>% mutate(pan_sensible = `valeur AMR`*`effectif AMR`/100,
+                                non_pan_sensible = `effectif AMR`-pan_sensible)
   # Ordonner par année
   matrice <- matrice[order(matrice$annee), ]
-  
   # Sélectionner les colonnes pertinentes
   matrice <- matrice[, c("annee", "pan_sensible", "non_pan_sensible")]
-  
   # Transposer la matrice et nommer les colonnes avec les années
   matrice <- t(matrice)
   colnames(matrice) <- as.character(matrice[1, ])
   matrice <- matrice[-1, ]
-  
   # Convertir les années en numérique
   colnames(matrice) <- as.numeric(colnames(matrice))
-  
   # Afficher le résultat du test de Cochran-Armitage
   cat("Résultats pour la modalité", population_modalite, ":\n")
-  print(CochranArmitageTest(matrice))
+  print(CochranArmitageTest(matrice, alternative = "one.sided"))
 }
 
 # Appliquer la fonction pour chaque modalité de population
@@ -468,226 +860,14 @@ for (modalite in modalites_population) {
 ### pour les animaux :
 # Définir les modalités de population pour AMR_animale_fr
 modalites_population_animale <- unique(AMR_nationale_animal$population)
-
 # Créer une liste pour stocker les résultats des tests
 resultats_tests <- list()
-
 # Boucle sur les modalités de population animale
 for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
 ```
 
-## L'indicateur est-il lié à l'exposition aux antimicrobiens (= la pression sélective) ?
-
-## Cartographie
-
-```{r}
-# les 3 extraits de données qui nous intéressent sont les suivants 
-
-AMR_ville_2021<-AMR%>%
-  filter(population=="ville",annee=="2021")
-
-AMR_bovin_2021<-AMR%>%
-  filter(population=="bovin-adulte",annee=="2021")
-
-AMR_chat_2021<-AMR%>%
-  filter(population=="Chat",annee=="2021")
-
-```
-
-
-```{r}
-
-# ETAPE 0 
-reg_2019<-read.csv("donnees/region2019.csv") # infos sur les régions : données externes
-# chargement des tracés des régions
-
-reg_metropole <- sf::read_sf("donnees/ADMIN-EXPRESS_3-2__SHP_LAMB93_FXX_2024-02-15/ADMIN-EXPRESS/1_DONNEES_LIVRAISON_2024-02-00157/ADE_3-2_SHP_LAMB93_FXX-ED2024-02-15")%>%
-  group_by(INSEE_REG)%>%
-  rename(reg=INSEE_REG)%>%
-  mutate(reg=as.integer(reg))%>%
-  summarise()
-
-# VILLE 2021
-# ETAPE 1
-# on récupère les régions où la valeur AMR a été calculée
-
-regions<-data.frame(unique(AMR_ville_2021$region))
-names(regions)<-"libelle"
-
-# ETAPE 2
-# jointure pour faire correspondre code et region
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-
-# ETAPE 3
-# jointure avec les codes régionaux
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-
-
-# ETAPE 4
-# Jointure finale
-regions_AMR_ville<-AMR_ville_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-# ETAPE 5
-# on retire les régions dont on ne dispose pas les formes géométriques et la valeur NATIONALE
-R1<-regions_AMR_ville[-c(7,10,16),]
-
-
-
-# on effectue le même procédé pour les 2 autres populations
-
-# BOVIN
-#1
-regions<-data.frame(unique(AMR_bovin_2021$region))
-names(regions)<-"libelle"
-#2
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-#3
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-#4
-
-regions_AMR_bovin<-AMR_bovin_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-#5
-R2<-regions_AMR_bovin[-10,] 
-
-# CHAT&CHIEN
-#1
-regions<-data.frame(unique(AMR_chat_2021$region))
-names(regions)<-"libelle"
-#2
-regions_code<-left_join(regions, reg_2019, by = "libelle")
-
-# on ne garde que le libelle et le code regional
-regions_code<-regions_code%>%
-  select(libelle,reg)
-#3
-regions_code_poly<-right_join(regions_code, reg_metropole, by = "reg")
-
-regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
-#4
-regions_AMR_chienchat<-AMR_chat_2021%>%
-  full_join(regions_code_poly,by = join_by(region))%>%
-  select(region,`valeur AMR`,geometry)
-#5 
-R3<-regions_AMR_chienchat[-10,]
-
-
-# REMARQUES : 
-# enlever le national 
-# ajouter les formes (ou enlever) des OUtres-MER
-# il y a des NA à représenter en gris
-
-# on enlève le National
-# il y a des NA à représenter en gris
-
-# ----------------------------------------------------------------------------------
-# Représentation de la valeur AMR de la population ville en 2021 
-
-carteAMR1<-R1%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population ville par régions de france métropolitaine en 2021"
-  )
-
-# Représentation de la valeur AMR de la population bovin en 2021 
-
-carteAMR2<-R2%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population bovin par régions de france métropolitaine en 2021"
-  )
-
-
-# Représentation de la valeur AMR de la population chien_chat en 2021 
-
-carteAMR3<-R3%>%
-  ggplot() +
-  geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(), # on supprime les petits tiraits des axes
-        panel.grid.major = element_blank(), # on supprime la grille
-        panel.grid.minor = element_blank(), # on supprime la grille
-        # Supprimer l'arrière-plan du panneau
-        panel.background = element_blank())+
-  labs(
-    title = "Valeur AMR de la population chien et chat par régions de france métropolitaine en 2021"
-  )
-
-
-
-
-# A FAIRE : 
-# trouver polygone pour les O-M et ajouter les représentations
-
-# enlever les valeurs des axes 
-# Ajouter % à côté de la valeur AMR
-# Mettre la même échelle
-# mettre une légende pour les valeurs manquante
-
-
-
-
-  
-```
-
-```{r Représentation des cartes}
-
-carteAMR1
-carteAMR2
-carteAMR3
-
-
-```
-
-
-## Données AMR pour la population ville de 2021
-
-## Données AMR pour la population bovin de 2021
-
-
-## Données AMR pour la population chien&chat de 2021
-
-
-
-
-
-
-
-
-=======
 ### Lien à l'usage
 
 Regression beta ou correlation sur lien entre usage et resistance à echelle nationale dans temps pour chaque population et à échelle régionale pour homme (modèles de panel ?). 
@@ -695,8 +875,259 @@ Voir s’il faut tester un décalage dans le temps (lien meilleur si prend usage
 Voir s’il faut tester le lien à l’usage décomposé par famille antibiotique (et non somme globale -> déterminer une famille qui jouerait plus particulièrement)
 Significativité attendue et force du lien (part de variabilité expliquée par usage ? aire sous courbe ROC ?).
 
+#### 1 : Visualisation
+
 ```{r}
+usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
+
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
+  geom_path(size = 0.8)+
+  geom_point(aes(colour = path), size = 1)+
+  theme_minimal()+
+  theme(legend.position = "top")+
+  labs(x = "Pan-S",
+       y = "Usage d'antibiotiques",
+       title = "L'usage d'antiotique semble avoir un effet sur la pan-sensibilité des animaux",
+       caption = "Note de lecture : En 2012, les porcs avaient une valeur d'usage de 1 pour une pan-sensibilité d'environ 22.5%",
+       subtitle = "Pan-sensibilité par population animale et usage d'antibiotique",
+       color = "Année du test de Pan-S")+
+  scale_color_manual(values = c("between" = "black", "Start (2012)" = "green", "End (2021)" = "red"))+
+  facet_wrap(~population, scales = "free")
+
+usage_humain <- usage_humain %>%
+  group_by(annee, population) %>%
+  mutate(AMU_moyen = mean(`valeur AMU`),
+         AMR_moyen = mean(`valeur AMR`, na.rm = TRUE))
+
+usage_humain$path <- ifelse(usage_humain$annee == 2012 & usage_humain$population == "ville", "Start", ifelse(usage_humain$annee == 2015 & usage_humain$population == "EHPAD", "Start", ifelse(usage_humain$annee == 2018 & usage_humain$population == "ES", "Start", ifelse(usage_humain$annee == 2021, "End", "between"))))
+
+ggplot(data = usage_humain, aes(x = AMR_moyen, y = AMU_moyen))+
+  geom_path(size = 0.8)+
+  geom_point(aes(colour = path), size = 1)+
+  theme_minimal()+
+  theme(legend.position = "top")+
+  labs(x = "Pan-S",
+       y = "Usage d'antibiotiques",
+       title = "L'usage d'antiotique a un effet sur la pan-sensibilité en EHPAD et en ville",
+       caption = "Note de lecture : En 2012, un usage d'antibiotique de 140 DDD/1000 habitants/jour pour la population de ville a\nentrainé une sensibilité de 47%.",
+       subtitle = "Pan-sensibilité par population humaine et usage d'antibiotique",
+       color = "Année du test de Pan-S")+
+  scale_color_manual(values = c("between" = "black", "Start" = "green", "End" = "red"))+
+  facet_wrap(~population, scales = "free")
+```
+Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
+
+Pour les populations humaines, on observe nettement que l'usage d'antibiotique entraine une baisse de la sensibilité. On observe également que les antibiotiques sont de moins en moins utilisé, et donc cela augmente la sensibilité à ceux-ci.
+
+#### 2 : Coefficient de corrélation
+
+```{r}
+for (pop in unique(usage_humain$population)){
+  usage_humain_na <- na.omit(usage_humain[which(usage_humain$population == pop),])
+  print(paste(pop, round(cor(usage_humain_na$`valeur AMR`[which(usage_humain_na$population == pop)], usage_humain_na$`valeur AMU`[which(usage_humain_na$population == pop)]), 4), sep = " : "))
+  rm(usage_humain_na)
+}
+
+for (pop in unique(usage_animal$population)){
+  print(paste(pop, round(cor(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], usage_animal$`valeur AMU`[which(usage_animal$population == pop)]), 4), sep = " : "))
+}
+```
+L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les populations, sauf la population bovine pour laquelle la corrélation est dans le sens inverse Nous observons des corrélations entre 40% et 80%, nous pouvons estimer le fait qu'un lien entre l'usage et la sensibilité est bien présent.
+
+#### 3 : Régression bêta
+
+Pour bien comprendre que nous devons utiliser une régression bêta, se pencher sur les résults d'une régression logit généralisée et comparer les déviances des deux modèles.
+
+```{r}
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit")) # Une fonction de lien logit est le choix le plus adapté pour des données comprises entre 0 et 1, AMR se comporte comme une loi binomiale comme c'est équivalent à la proportion de sensibles.
+  print(pop)
+  print(summary(model_glm))
+}
+
+for (pop in unique(usage_humain$population)){
+  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, family = binomial(link = "logit"))
+  print(pop)
+  print(summary(model_glm))
+}
+```
+
+Une regression bêta est privilégiée car on analyse la proportion d'animaux sensibles aux antibiotiques. Plus précisément, le point d'attention, qui permet de justifier l'utilisation de la régression bêta et que nos tests ne sont pas réalisés sur des échantillons que nous pouvons considérer comme réellement indépendants. Effectivement, l'échantillon sélectionné dans chaque région et pour chaque année, ont des ressemblances dû au fait qu'ils appartiennent à la même région déjà, et du fait qu'ils proviennent éventuellement du même abattoir pour les animaux. Il faudra utiliser la fonction betareg du package de même nom.
+
+```{r}
+# Les hypothèses à valider avant d'utiliser la régression bêta
+
+# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
+usage_animal <- usage_animal %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+usage_humain <- usage_humain %>%
+  filter(!is.na(`valeur AMR`)) %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+
+# 1 : On vérifie que les données AMR sont hétéroscédastiques 
+ggplot(data = usage_animal)+
+  geom_boxplot(aes(x = `valeur AMR`, y = population))+
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
+  theme_minimal()+
+  labs(title = "Dispertion des valeurs AMR")
+
+ggplot(data = usage_humain)+
+  geom_boxplot(aes(x = `valeur AMR`, y = population), na.rm = TRUE)+
+  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
+  theme_minimal()+
+  labs(title = "Dispertion des valeurs AMR")
+
+# 2 : La variable de résistance doit suivre une loi bêta
+# Regardons la modélisation d'une loi bêta suivant les valeurs de pan-sensibilité de chaque population
+
+for (pop in unique(usage_animal$population)){
+  mu <- mean(usage_animal$`valeur AMR`[which(usage_animal$population == pop)])
+  phi <- (mu * (1 - mu)) / var(usage_animal$`valeur AMR`[which(usage_animal$population == pop)]) - 1
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  hist(usage_animal$`valeur AMR`[which(usage_animal$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
+  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+}
+
+for (pop in unique(usage_humain$population)){
+  mu <- mean(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE)
+    phi <- (mu * (1 - mu)) / var(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE) - 1
+  a <- mu * phi
+  b <- (1 - mu) * phi
+  hist(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
+  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
+}
+
+# On fait la régression bêta
+
+# Charger le package nécessaire pour les modèles de régression bêta
+if(!require("betareg")){
+  install.packages("betareg")
+  library("betareg")
+}
+# Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
+  print(pop)
+  print(summary(model_beta))
+  print(AIC(model_beta))
+}
+for (pop in unique(usage_humain$population)){
+  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit")
+  print(pop)
+  print(summary(model_beta))
+  print(AIC(model_beta))
+}
+```
+
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
+
+Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
+
+Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
+
+### Robustesse de l'indicateur
+
+### Lien à d'autres variables
+
+#### 1 : Analyse factorielle
+
+```{r}
+rm(list=ls())
+AMR<-read_xlsx("donnees/donnees_AMR.xlsx")
+familles<-unique(AMR$famille)
+AMR_animale<-AMR%>%
+  filter(famille==familles[1])
+AMR_humaine<-AMR%>%
+  filter(famille==familles[2])
+```
+
+Dans cette partie, nous nous intéréssons aux données annexes susceptibles d'influencer le taux de bactérie Escherichia coli pan-sensibles.
+Après avoir observé une trop grande perte d'effectif lors de l'étude régionale des données portant sur la famille animale, l'étude nationale sera également retenue dans cette partie. En revanche, une étude au niveau régionale sera faite pour les populations de la famille humaine.
+Les facteurs qui ont été étudiés sont les suivants : 
+- La pollution
+- Les facteurs socio-économiques (PIB,Revenu par habitant)
+- L'accès au soins
+- Les caractéristiques géographiques des territoires et le climat
+- Le tourisme
+- Les infrastructures
+- Les caractéristiques démographiques
+- Les caractéristiques agricoles 
+- L'hygiène biosécurité et la prévention 
+
+Les jeux de données ont été remis aux propres dans analyse val 
+
+
+## Densité de médecin 
+
+```{r}
+load("donnees/cofacteurs/densite_med.rdata")
+load("donnees/reg_metropole.rdata") 
+
+reg_metropole_sans_poly<-reg_metropole%>%
+  rename(region="NOM",nreg="reg")%>%
+  select(region,nreg)%>%
+  mutate(nreg=as.character(nreg))
+
+nouvelle_observation <- data.frame(region = "Nationale", nreg = "National")
+reg_metropole_sans_poly<-rbind(reg_metropole_sans_poly,nouvelle_observation)
+
+
+table1<-AMR%>%
+  left_join(reg_metropole_sans_poly)
+table2<-table1%>%
+  left_join(densite_med,by=c("nreg","annee"))
 
 ```
+
+## GES
+```{r}
+
+load("donnees/cofacteurs/emission_ges.rdata")
+
+emission_ges_Nationale<-GES%>%
+  mutate(region="Nationale")%>%
+  rename(annee="TIME_PERIOD",emission_tonnes_ges="OBS_VALUE")%>%
+  select(annee,emission_tonnes_ges,region)
+
+table3<-table2%>%
+  full_join(emission_ges_Nationale,by=c("region","annee"))
+
+table3<-order(table3,by=desc(table3$annee))
+
+table_ord_annee <- arrange(table3, desc(annee))
+```
+##PIB
+```{r}
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
+
+PIB<-PIB%>%
+  rename(pib_hab=`_PIB_HABITANT`)
+
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIB_hab_reg.rdata")
+
+
+table4<-table3%>%
+  full_join(PIB,by=c("annee","nreg"))%>%
+  full_join(PIB_hab_reg,by=c("annee","nreg"))
+
+# j'aimerais combler pib_hab en mettant les observations nationales et régionales dans la même colonne 
+
+```
+
+## NB DEG_JOURS
+```{r}
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours.rdata")
+
+table5<-table4%>%
+  full_join(nb_degjours,by=c("annee","nreg"))
+
+
+```
+
 
 
