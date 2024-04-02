@@ -1087,14 +1087,26 @@ table_ord_annee <- arrange(table3, desc(annee))
 ```{r}
 load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
 
+PIB<-PIB%>%
+  rename(pib_hab=`_PIB_HABITANT`)
+
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIB_hab_reg.rdata")
+
+
 table4<-table3%>%
-  full_join(PIB,by=c("annee","nreg"))
+  full_join(PIB,by=c("annee","nreg"))%>%
+  full_join(PIB_hab_reg,by=c("annee","nreg"))
+
+# j'aimerais combler pib_hab en mettant les observations nationales et régionales dans la même colonne 
 
 ```
 
 ## NB DEG_JOURS
 ```{r}
-load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours_REG.rdata")
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours.rdata")
+
+table5<-table4%>%
+  full_join(nb_degjours,by=c("annee","nreg"))
 
 
 ```
