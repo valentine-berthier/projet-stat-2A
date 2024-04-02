@@ -689,13 +689,18 @@ PIB_revenu_national <- read_excel("donnees/cofacteurs/PIB_revenu_national.xlsx",
 PIB_revenu_national<-PIB_revenu_national[4:13,]
 colnames(PIB_revenu_national)<-PIB_revenu_national[1,]
 PIB_revenu_national<-PIB_revenu_national[-c(1,2),]
+colnames(PIB_revenu_national)[c(1,2)]<-c("label","explication")
 
 PIB_revenu_national_12_21<-PIB_revenu_national%>%
-  select( "NA","NA","2012","2013" ,"2014", "2015" ,"2016", "2017" ,"2018","2019" ,"2020", "2021" ,"2022")
-
+  select( "label","explication","2012","2013" ,"2014", "2015" ,"2016", "2017" ,"2018","2019" ,"2020", "2021" ,"2022")
+annees<-c( "label","explication","2012","2013" ,"2014", "2015" ,"2016", "2017" ,"2018","2019" ,"2020", "2021" ,"2022")
 library(data.table)
 PIB_revenu_national_12_21<-transpose(PIB_revenu_national_12_21)
 
+PIB_revenu_national_12_21<-PIB_revenu_national_12_21%>%
+  mutate(annee=annees)
+
+save(PIB_revenu_national_12_21,file="donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
 ```
 
 
