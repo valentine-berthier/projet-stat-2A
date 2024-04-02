@@ -98,14 +98,17 @@ ModeleHUM2<-ModeleHUM2%>%
 usage <- read_excel("donnees/D_usage.xlsx")
 
 usage$population <- as.factor(usage$population)
+
 usage_animal <- usage %>%
   filter(famille == "Animale") %>%
-  arrange(population, -annee)
+  arrange(population, -annee) %>%
+  mutate(annee = as.factor(annee), region = as.factor(region))
 usage_humain <- usage %>%
   filter(famille == "Humaine") %>%
   select(population, annee, region, `valeur AMU`) %>%
   left_join(AMR_humaine[,-c(1, 4)], by = join_by(region, annee, population)) %>%
-  arrange(population, -annee)
+  arrange(population, -annee) %>%
+  mutate(annee = as.factor(annee), region = as.factor(region))
 ```
 
 ### Transformation pour la cartographie
@@ -992,7 +995,7 @@ if(!require("betareg")){
 # Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit") # L'année et la région n'entrent pas en jeu dans la régression bêta, le premier car il n'est pas significatif (si on analyse toutes les populations en même temps) et n'a pas plusieurs même modalité (si on analyse une population après l'autre) et le second car l'usage n'existe pas au niveau régional
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
