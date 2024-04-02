@@ -653,7 +653,7 @@ print(arbre_decision)
 rpart.plot(arbre_decision)
 ```
 
-## Modèle linéaire ?
+## Modèle linéaire généralisé ?
 
 ```{r}
 data_glm <- AMR_animale %>%
@@ -666,5 +666,13 @@ summary(fit)
 # HO : "GLM non significatif" -> beta1 = 0 vs H1 : "GLM significatif"
 qchisq(p=0.90,df=16)
 fit$null.deviance - fit$deviance
+
+data_glm <- AMR_humaine %>%
+  select(`valeur AMR`, population, annee, region) %>%
+  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
+
+fit <- glm(data = data_glm, `valeur AMR` ~ population)
+summary(fit)
 ```
 Clairement ici, le GLM semble significatif car deviance nulle - deviance GLM >> quantile d'un khi2
+Bovin adulte est la modalité de référence.
