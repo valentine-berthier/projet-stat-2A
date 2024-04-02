@@ -630,7 +630,9 @@ bp_test <- bptest(reg_aux)
 Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
 Cependant après une analyse les données semblent hétéroscédastique, on va donc privilégier une regression bêta.
 
-# Apprentissage supervisé ?
+# Prédiction
+
+## Apprentissage supervisé ?
 
 ```{r}
 # Chargement de la bibliothèque requise
@@ -649,6 +651,20 @@ print(arbre_decision)
 
 # Visualisation graphique de l'arbre avec plus de branches
 rpart.plot(arbre_decision)
-
 ```
 
+## Modèle linéaire ?
+
+```{r}
+data_glm <- AMR_animale %>%
+  select(`valeur AMR`, population, annee, region, famille2) %>%
+  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
+
+fit <- glm(data = data_glm, `valeur AMR` ~ population)
+summary(fit)
+
+# HO : "GLM non significatif" -> beta1 = 0 vs H1 : "GLM significatif"
+qchisq(p=0.90,df=16)
+fit$null.deviance - fit$deviance
+```
+Clairement ici, le GLM semble significatif car deviance nulle - deviance GLM >> quantile d'un khi2
