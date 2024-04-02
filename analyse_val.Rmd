@@ -672,17 +672,28 @@ GES<-GES%>%
 save(GES,file="donnees/cofacteurs/emission_ges.rdata")
 
 
-ODD_REG <- read_delim("donnees/cofacteurs/ODD_REG.csv", 
-+     delim = ";", escape_double = FALSE, trim_ws = TRUE)
+ODD_REG <- read_delim("donnees/cofacteurs/ODD_REG.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-Evol_nb_degjours_REG<-ODD_REG%>%
+nb_degjours_REG<-ODD_REG%>%
   filter(no_indic=="i096",variable=="climat_dju_nb")%>%
   select(codgeo,libgeo,A2012,A2013,A2014,A2015,A2016,A2017,A2018,A2019,A2020,A2021,A2022)
 
 nreg<-c("1","2","3","4","6","11","24","27","28","32","44","52","53","75","76","84","93","94")
-Evol_nb_degjours_REG$codgeo<-nreg
+nb_degjours_REG$codgeo<-nreg
 
-save(Evol_nb_degjours_REG,file="donnees/cofacteurs/nb_degjours_REG.rdata")
+colnames(nb_degjours_REG)<-c("codgeo", "libgeo", "2012" , "2013" , "2014" , "2015" , "2016"  ,"2017"  ,"2018" , "2019" , "2020" , "2021", "2022") 
+annees<-c("2012" , "2013" , "2014" , "2015" , "2016"  ,"2017"  ,"2018" , "2019" , "2020" , "2021", "2022") 
+library(tidyr)
+nb_degjours_REG_2<-nb_degjours_REG%>%
+tidyr::pivot_longer(cols=starts_with('20'),values_to="nb_jour_deg")
+nb_degjours<-nb_degjours_REG_2%>%
+  rename(nreg="codgeo",annee="name")%>%
+  select(nreg,annee,nb_jour_deg)
+
+
+
+
+save(nb_degjours,file="donnees/cofacteurs/nb_degjours.rdata")
 
 PIB_revenu_national <- read_excel("donnees/cofacteurs/PIB_revenu_national.xlsx",sheet = "T_1115")
 
@@ -700,7 +711,17 @@ PIB_revenu_national_12_21<-transpose(PIB_revenu_national_12_21)
 PIB_revenu_national_12_21<-PIB_revenu_national_12_21%>%
   mutate(annee=annees)
 
-save(PIB_revenu_national_12_21,file="donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
+colnames(PIB_revenu_national_12_21)<-PIB_revenu_national_12_21[1,]
+PIB_revenu_national_12_21<-PIB_revenu_national_12_21[-c(1,2),]
+colnames(PIB_revenu_national_12_21)<-c("POP"       ,         "B1GQ"         ,      "B5GQ"       ,        "B1GQ2014"         ,      "_RNB_REEL",          "_PIB_HABITANT"   , "_RNB_REEL_HABITANT", "_PIB_HABITANT2014"     , "label")
+PIB<-PIB_revenu_national_12_21%>%
+  select(POP, `_PIB_HABITANT`, `_RNB_REEL_HABITANT`, label)%>%
+  rename(annee="label",POP_en_milier="POP")%>%
+  mutate(nreg="National",annee=as.numeric(annee))
+
+save(PIB,file="donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
+
+
 ```
 
 

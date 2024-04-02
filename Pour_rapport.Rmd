@@ -1049,15 +1049,55 @@ Les jeux de données ont été remis aux propres dans analyse val
 ```{r}
 load("donnees/cofacteurs/densite_med.rdata")
 load("donnees/reg_metropole.rdata") 
+
 reg_metropole_sans_poly<-reg_metropole%>%
   rename(region="NOM",nreg="reg")%>%
   select(region,nreg)%>%
   mutate(nreg=as.character(nreg))
-  
-table<-AMR%>%
+
+nouvelle_observation <- data.frame(region = "Nationale", nreg = "National")
+reg_metropole_sans_poly<-rbind(reg_metropole_sans_poly,nouvelle_observation)
+
+
+table1<-AMR%>%
   left_join(reg_metropole_sans_poly)
-table<-table%>%
-  filter(region!="Nationale")
-table<-table%>%
+table2<-table1%>%
   left_join(densite_med,by=c("nreg","annee"))
+
 ```
+
+## GES
+```{r}
+
+load("donnees/cofacteurs/emission_ges.rdata")
+
+emission_ges_Nationale<-GES%>%
+  mutate(region="Nationale")%>%
+  rename(annee="TIME_PERIOD",emission_tonnes_ges="OBS_VALUE")%>%
+  select(annee,emission_tonnes_ges,region)
+
+table3<-table2%>%
+  full_join(emission_ges_Nationale,by=c("region","annee"))
+
+table3<-order(table3,by=desc(table3$annee))
+
+table_ord_annee <- arrange(table3, desc(annee))
+```
+##PIB
+```{r}
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
+
+table4<-table3%>%
+  full_join(PIB,by=c("annee","nreg"))
+
+```
+
+## NB DEG_JOURS
+```{r}
+load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours_REG.rdata")
+
+
+```
+
+
+
