@@ -176,7 +176,7 @@ Nous pouvons observer que les animaux "domestiques" (Chien, chat, cheval) ont un
 ### Possibilité de calcul de la pan-S
 
 Taille du jeu de données (nombre moyen d’isolats considérés)
-Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population
+Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pour toutes les populations. Et que la perte d’information liée aux souches pour lesquelles ce n’est pas calculable est restreinte. -> présentation d’un boxplot des taux de calcul par espèce/population 
 
 #### 1 : Taille du jeu de données
 ```{r echo=TRUE}
@@ -187,18 +187,6 @@ AMR %>%
   group_by(population, annee, region) %>%
   summarise(`nombre moyen d'isolats` = round(mean(`effectif AMR`), 0))%>%
   arrange(desc(`nombre moyen d'isolats`))
-
-boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
-  geom_boxplot() +
-  labs(title = "% de perte d'effectif lors du passage de l'étude Nationale à Régionale",
-       x = "Groupe",
-       y = "taux d'effectif perdu",
-       caption = str_glue("Cohorte : population humaine au niveau National\nLecture : On observe des pertes non négligeables pour toutes les populations lors du passage de l'étude\nNationale à régionale. On en conclut que beaucoup de régions n'ont pas les effectifs nécessaires pour\ns'inscrire dans les rapports (minimum 30)"))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-boxplot_taux
-
 AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
@@ -361,8 +349,6 @@ print("animaux")
 cat("Proportion observée:", proportion_obs, "\n")
 cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
-<<<<<<< HEAD
-=======
 
 proportion_obs <- (100 - mean(table$taux, na.rm = TRUE))/100
 proportion_nulle <- 15/100
@@ -372,7 +358,6 @@ print("humains")
 cat("Proportion observée:", proportion_obs, "\n")
 cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
->>>>>>> 4a73da870eff62fe71ce1d33b41102399a7c9201
 ```
 Avec un niveau de confiance de 94%, on peut conclure que la proportion de perte pour chaque isolat animal est significativement inférieure à 20%. Pour la famille humaine, nous pouvons conclure, au niveau de confiance de 99% que la proportion de perte dûe aux tests de pan-sensibilité est significativement inférieure à 15%.
 
@@ -1128,6 +1113,5 @@ table5<-table4%>%
 
 
 ```
-
 
 
