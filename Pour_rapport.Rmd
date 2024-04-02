@@ -184,7 +184,6 @@ AMR %>%
   group_by(population, annee, region) %>%
   summarise(`nombre moyen d'isolats` = round(mean(`effectif AMR`), 0))%>%
   arrange(desc(`nombre moyen d'isolats`))
-<<<<<<< HEAD
 
 boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_eff_perte), y = taux_eff_perte)) +
   geom_boxplot() +
@@ -197,8 +196,6 @@ boxplot_taux<-ggplot(effectifs_totaux_animale, aes(x = reorder(population, taux_
 
 boxplot_taux
 
-=======
->>>>>>> 4a73da870eff62fe71ce1d33b41102399a7c9201
 AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
