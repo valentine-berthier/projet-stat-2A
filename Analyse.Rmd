@@ -629,3 +629,26 @@ bp_test <- bptest(reg_aux)
 
 Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
 Cependant après une analyse les données semblent hétéroscédastique, on va donc privilégier une regression bêta.
+
+# Apprentissage supervisé ?
+
+```{r}
+# Chargement de la bibliothèque requise
+library(rpart)
+library(rpart.plot)
+
+data_arbre_cart <- AMR_animale %>%
+  select(`valeur AMR`, population, annee, region) %>%
+  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
+
+# Construction de l'arbre de décision
+arbre_decision <- rpart(`valeur AMR` ~ population + region, data = data_arbre_cart)
+
+# Affichage de l'arbre
+print(arbre_decision)
+
+# Visualisation graphique de l'arbre avec plus de branches
+rpart.plot(arbre_decision)
+
+```
+

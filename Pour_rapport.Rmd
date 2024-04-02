@@ -32,6 +32,9 @@ AMR <- read_excel("donnees/donnees_AMR.xlsx")
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
 
+# Spécification selon que la population est d'abattoir ou non
+AMR$famille2 <- paste(AMR$famille, ifelse(grepl("abattoir", AMR$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
+
 # Séparation en 2 familles
 AMR_humaine <- AMR[which(AMR$famille=='humaine'),]
 AMR_animale <- AMR[which(AMR$famille=='animale'),]
@@ -41,11 +44,6 @@ AMR_nationale <- AMR %>%
 AMR_regionale <- AMR %>%
   filter(region != "Nationale")
 
-AMR_nationale_animal <- AMR_nationale %>%
-  filter(famille == "animale")
-AMR_nationale_humain <- AMR_nationale %>%
-  filter(famille == "humaine")
-
 # Identification et suppression des valeurs aberrantes
 AMR_humaine %>%
   identify_outliers(`valeur AMR`)
@@ -53,8 +51,6 @@ AMR_humaine <- AMR_humaine[-c(262),]
 
 # Indicatrice selon que la population provient d'un abattoir ou non
 AMR_nationale_animal$abattoir <- grepl("abattoir", AMR_nationale_animal$population, ignore.case = TRUE)
-
-AMR$famille2 <- paste(AMR$famille, ifelse(grepl("abattoir", AMR$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
 
 AMR_regionale$famille2 <- paste(AMR_regionale$famille, ifelse(grepl("abattoir", AMR_regionale$population, ignore.case = TRUE), "-abattoir", ""), sep = "")
 ```
@@ -855,7 +851,7 @@ for (modalite in modalites_population_animale) {
 
 ### Lien à l'usage
 
-Regression beta ou correlation sur lien entre usage et resistance à echelle nationale dans temps pour chaque population et à échelle régionale pour homme (modèles de panel ?). 
+Regression beta ou correlation sur lien entre usage et resistance à echelle nationale dans temps pour chaque population et à échelle régionale pour homme 
 Voir s’il faut tester un décalage dans le temps (lien meilleur si prend usage N-1 ?)
 Voir s’il faut tester le lien à l’usage décomposé par famille antibiotique (et non somme globale -> déterminer une famille qui jouerait plus particulièrement)
 Significativité attendue et force du lien (part de variabilité expliquée par usage ? aire sous courbe ROC ?).
@@ -1019,6 +1015,13 @@ Il sera également possible d'affirmer cette hypothèses avec un test d'homoscé
 Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
 
 ### Robustesse de l'indicateur
+
+#### 1 : Régression linéaire pour connaître la valeur de pan-S
+
+```{r}
+glm(AMR_animale$`valeur AMR` ~ AMR_animale$)
+```
+
 
 ### Lien à d'autres variables
 
