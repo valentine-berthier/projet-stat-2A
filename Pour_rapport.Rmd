@@ -44,6 +44,11 @@ AMR_nationale <- AMR %>%
 AMR_regionale <- AMR %>%
   filter(region != "Nationale")
 
+AMR_nationale_animal <- AMR_nationale %>%
+  filter(famille == "animale")
+AMR_nationale_humain <- AMR_nationale %>%
+  filter(famille == "humaine")
+
 # Identification et suppression des valeurs aberrantes
 AMR_humaine %>%
   identify_outliers(`valeur AMR`)
@@ -771,7 +776,7 @@ Nous obtenons plus ou moins les mêmes résultats, l'année n'explique que très
 Spageti plot et tests de tendance -> pour montrer que des tendances identifiables
 
 ```{r,echo=FALSE}
-ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abattoir"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Hausse générale de la sensibilité des populations en abattoir",
@@ -780,7 +785,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == TRUE),], aes(
        color = "Population") +
   theme_minimal()
 
-ggplot(AMR_nationale_animal[which(AMR_nationale_animal$abattoir == FALSE),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
+ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
   labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
@@ -920,6 +925,14 @@ L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les popula
 Pour bien comprendre que nous devons utiliser une régression bêta, se pencher sur les résults d'une régression logit généralisée et comparer les déviances des deux modèles.
 
 ```{r}
+# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
+usage_animal <- usage_animal %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+usage_humain <- usage_humain %>%
+  filter(!is.na(`valeur AMR`)) %>%
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
+
+
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit")) # Une fonction de lien logit est le choix le plus adapté pour des données comprises entre 0 et 1, AMR se comporte comme une loi binomiale comme c'est équivalent à la proportion de sensibles.
@@ -947,13 +960,6 @@ De plus, selon le test de significativité, les modèles GLM ne sont pas adéqua
 
 ```{r}
 # Les hypothèses à valider avant d'utiliser la régression bêta
-
-# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
-usage_animal <- usage_animal %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
-usage_humain <- usage_humain %>%
-  filter(!is.na(`valeur AMR`)) %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
 
 # 1 : On vérifie que les données AMR sont hétéroscédastiques 
 ggplot(data = usage_animal)+

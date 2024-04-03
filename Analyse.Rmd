@@ -529,6 +529,27 @@ for (pop in unique(usage_animal$population)){
 
 print le qqplot pour voir si la normalité des données est bien observée.
 
+##### Lien avec l'usage de l'année n-1 plutôt qu'avec l'année n
+
+```{r}
+# On crée le nouveau data frame où l'usage de l'année n-1 se trouve en face de la pan-S de l'année n
+usage_animal <- usage_animal %>%
+  arrange(population, annee)
+
+usage_animal2 <- data.frame(matrix(vector(), 0, 9, dimnames=list(c(), colnames(usage_animal))))
+
+for (pop in unique(usage_animal$population)){
+  don_pop <- usage_animal[which(usage_animal$population == pop),]
+  for (ligne in 0:(nrow(don_pop)-2)){
+    don_pop$`valeur AMU`[nrow(don_pop) - ligne] <- don_pop$`valeur AMU`[nrow(don_pop) - ligne - 1]
+  }
+  usage_animal2 <- rbind(usage_animal2,don_pop[2:nrow(don_pop),])
+}
+
+
+```
+
+
 #### Famille Humaine
 
 ```{r}
