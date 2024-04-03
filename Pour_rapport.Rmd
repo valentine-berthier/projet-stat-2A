@@ -41,6 +41,10 @@ AMR_animale <- AMR[which(AMR$famille=='animale'),]
 
 AMR_nationale <- AMR %>%
   filter(region == "Nationale")
+AMR_nationale_animal<-AMR_nationale%>%
+  filter(famille == "animale")
+
+
 AMR_regionale <- AMR %>%
   filter(region != "Nationale")
 
@@ -274,6 +278,9 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
+
+
+
 
 ```{r}
 table1 <- ModeleHUM1 %>%
@@ -1082,6 +1089,7 @@ table2<-table1%>%
   left_join(densite_med,by=c("nreg","annee"))
 
 ```
+
 
 ## GES
 ```{r}
