@@ -278,7 +278,7 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13 % des animaux étudiés n'ont pas un profil de résistance pan-sensible."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
@@ -292,7 +292,7 @@ table1 <- ModeleHUM1 %>%
   filter(`profil AMR` == "pan-sensible", bacterie=="Escherichia coli") %>%
   group_by(annee, population, region)%>%
   mutate(eff_pansensible=sum(`effectif AMR`))%>%
-  select(annee, population, region, eff_pansensible)
+  select(annee, population, region,eff_pansensible)
 table2 <- ModeleHUM1 %>%
   filter(`profil AMR` == "C3G-R",bacterie=="Escherichia coli") %>%
   group_by(annee, population, region)%>%
@@ -458,9 +458,10 @@ regions_code<-regions_code%>%
 # ETAPE 3 : jointure avec les codes régionaux
 
 library(sf)
+library(dplyr)
 regions_code_poly<-right_join(regions_code, st_as_sf(reg_metropole), by = "reg")
 regions_code_poly<-regions_code_poly%>%
-  rename(region=libelle)
+  rename(region="libelle")
 
 # ETAPE 4 : jointure finale
 regions_AMR_ville<-AMR_ville_2021%>%
@@ -487,7 +488,8 @@ carteAMR1<-R1%>%
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population ville en France en 2021",
-       fill = "Pan-sensibilité")
+       fill = "Pan-sensibilité")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -495,7 +497,8 @@ carteAMR1_Guad<-R1_Guad%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -503,7 +506,8 @@ carteAMR1_Mart<-R1_Mart%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -511,7 +515,8 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -519,7 +524,8 @@ carteAMR1_Guyane<-R1_Guyane%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -527,7 +533,8 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))
+        panel.background = element_blank()+ theme(legend.position = "none"))+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
 if(!require("patchwork")){
   install.packages("patchwork")
@@ -577,7 +584,8 @@ carteAMR1<-R1%>%
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population bovin en France en 2021",
-       fill = "Pan-sensibilité")
+       fill = "Pan-sensibilité")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -585,7 +593,8 @@ carteAMR1_Guad<-R1_Guad%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -593,7 +602,8 @@ carteAMR1_Mart<-R1_Mart%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -601,7 +611,8 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -609,7 +620,8 @@ carteAMR1_Guyane<-R1_Guyane%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -617,7 +629,8 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))
+        panel.background = element_blank()+ theme(legend.position = "none"))+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
 carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 
@@ -662,7 +675,8 @@ carteAMR1<-R1%>%
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
-       fill = "Pan-sensibilité")
+       fill = "Pan-sensibilité")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -670,7 +684,8 @@ carteAMR1_Guad<-R1_Guad%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -678,7 +693,8 @@ carteAMR1_Mart<-R1_Mart%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -686,7 +702,8 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -694,7 +711,8 @@ carteAMR1_Guyane<-R1_Guyane%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank(),legend.position = "none")
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -702,7 +720,8 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))
+        panel.background = element_blank()+ theme(legend.position = "none"))+
+  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
 carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 ```
