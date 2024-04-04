@@ -242,13 +242,13 @@ ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte
 
 ggplot(AMR_perte_regionale_humain, aes(x = reorder(population, perte), y = perte)) +
   geom_hline(yintercept = mean(AMR_perte_regionale_humain$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
-  geom_boxplot(na.rm = TRUE) +
+  geom_point(na.rm = TRUE) +
   labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
        y = "Taux d'effectif perdu",
        caption = str_glue("Cohorte : population humaine\nLecture : Entre 2012 et 2021, les isolats humains ont subi moins de 1% de perte au niveau régional."))+
   scale_y_continuous(labels = scales::label_percent(scale = 100), limits = c(0,0.01))+
-  annotate("text", x = 0.7, y = 0.0014, label = "Mean = 0.09%", colour = "darkgreen", size = 3.3)+
+  annotate("text", x = 0.7, y = 0.0014, label = paste0("Mean = ",round(mean(AMR_perte_regionale_humain$perte),3)*100,"%"), colour = "darkgreen", size = 3.3)+
   scale_x_discrete(labels = c("ES", "ES-hemoculture", "Ville", "EHPAD"))
 ```
 La différence entre les effectifs nationaux et régionaux pour les population humaines sont de l'ordre de 1% et constitue donc une part négligeable à l'étude. L'étude au niveau régionale ne constitue donc pas un risque en terme de perte d'information. Pour les populations animales, la perte est assez élevée donc une étude régionale constitue un risque de perte d'informations. 
@@ -273,13 +273,22 @@ table_join<-table_join%>%
 
 label <- c("Veau", "Chat", "Chien", "Cheval", "Bovin", "Porc", "Poulet", "Dinde", "Lapin")
 
+moyennes<-table_join%>%
+  group_by(population)%>%
+  mutate(moyenne_taux=mean(taux))%>%
+  select(population,moyenne_taux)%>%
+  unique()
+# on peut le faire comme ça aussi : 
+mean_by_population <- aggregate(taux ~ population, data = table_join, FUN = mean)
+
 ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
-  geom_boxplot() +
+  geom_point() +
   geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
+  geom_point(data=moyennes,aes(x = population, y = 100 - moyenne_taux), color = "red", size = 3)+
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
@@ -322,13 +331,20 @@ table<-table%>%
 
 moyenne<-mean(table$taux,na.rm = TRUE) 
 
+moyennes<-table%>%
+  group_by(population)%>%
+  mutate(moyenne_taux=mean(taux,na.rm=TRUE))%>%
+  select(population,moyenne_taux)%>%
+  unique()
+
 ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
-  geom_boxplot() +
+  geom_point() +
   geom_hline(yintercept = 100 - moyenne, color = "darkgreen", linetype = "dashed", size = 0.8) +
+  geom_point(data=moyennes,aes(x = population, y = 100 - moyenne_taux), color = "red", size = 3)+
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible."))+
+       caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = population)+
   annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
@@ -380,7 +396,7 @@ représenter des boxplots par population des estimations régionales annuelles (
 Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
 Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
 
-#### 1 : Variabilité par population
+#### ok 1 : Variabilité par population
 
 La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, concentrons-nous sur l'étude de l'homogénéité des variances et des moyennes par groupe.
 
@@ -388,6 +404,9 @@ La variabilité entre les populations a déjà pu être observée dans l'analyse
 # Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
 AMR_humaine %>% levene_test(`valeur AMR` ~ population)
 AMR_animale %>% levene_test(`valeur AMR` ~ population)
+
+
+
 ```
 Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
 
@@ -417,6 +436,9 @@ ggplot(AMR_humaine, aes(x = `valeur AMR`, y = annee)) +
 # Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
 AMR_humaine %>% levene_test(`valeur AMR` ~ annee)
 AMR_animale %>% levene_test(`valeur AMR` ~ annee)
+
+mean(AMR_humaine$`valeur AMR`)
+mean(AMR_animale$`valeur AMR`)
 ```
 Pour les 2 familles, la p-valeur>0.05, on ne peux pas rejeter l'hypothèse nulle, ainsi nous n'observons pas de différence significative entre les variances des données annuelles. Par conséquent, nous pouvons supposer l’homogénéité des variances parmi les différentes années d'étude.
 
@@ -444,7 +466,8 @@ ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
 
 ################## 1 test par population
 for(i in unique(AMR_animale$population)){
-  AMR_animale[which(AMR_animale$population==i),] %>% levene_test(`valeur AMR` ~ region)
+  AMR_animale[which(AMR_animale$population==i),] %>% 
+    levene_test(`valeur AMR` ~ region)
 }
 
 temporaire <- AMR_animale %>% 
