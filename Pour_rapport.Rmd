@@ -424,8 +424,8 @@ Pour les 2 familles, la p-valeur>0.05, on ne peux pas rejeter l'hypothèse nulle
 
 ```{r}
 # Test de levene d'égalité de variance entre les régions (H0: variances égales)
-AMR_humaine %>% levene_test(`valeur AMR` ~ region)
 AMR_animale %>% levene_test(`valeur AMR` ~ region)
+AMR_humaine %>% levene_test(`valeur AMR` ~ region)
 
 # Représentation de la variabilité entre les régions
 ggplot(AMR_animale, aes(x = `valeur AMR`, y = region)) +
@@ -440,6 +440,33 @@ ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
+
+################## 1 test par population
+for(i in unique(AMR_animale$population)){
+  AMR_animale[which(AMR_animale$population==i),] %>% levene_test(`valeur AMR` ~ region)
+}
+
+temporaire <- AMR_animale %>% 
+  filter(population != "Poule-poulet")
+
+resultats_levene <- list()
+
+# Boucle sur les populations uniques
+for (i in unique(temporaire$population)) {
+  # Filtrer les données pour la population actuelle
+  data_population <- temporaire[temporaire$population == i, ]
+  
+  # Réaliser le test de Levene pour cette population
+  test <- levene_test(`valeur AMR` ~ region, data = data_population)
+  
+  # Stocker le résultat dans la liste
+  resultats_levene[[i]] <- test
+}
+
+# Afficher les résultats
+print(resultats_levene)
+
+
 ```
 Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
 
@@ -1059,6 +1086,7 @@ Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons 
 #### 1 : Régression linéaire pour connaître la valeur de pan-S
 
 ```{r}
+
 glm(AMR_animale$`valeur AMR` ~ AMR_animale$)
 ```
 
