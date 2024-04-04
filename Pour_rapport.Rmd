@@ -198,6 +198,7 @@ AMR %>%
 arrange(desc(`nombre de régions`))
 ```
 
+
 Par population et année, il y a, en moyenne, 24331 isolats. Plus on avance dans le temps, plus on a d'isolats considérés dans les analyses.
 
 ```{r,echo=FALSE}
@@ -489,7 +490,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population ville en France en 2021",
        fill = "Pan-sensibilité")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_continuous(name = "Légende", limits = c(30, 70),low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -541,7 +542,7 @@ if(!require("patchwork")){
   library("patchwork")
 }
 
-carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 
 # Cartographie des résultats de pan-S pour les bovins
 
@@ -632,7 +633,7 @@ carteAMR1_Reunion<-R1_Reunion%>%
         panel.background = element_blank()+ theme(legend.position = "none"))+
   scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
-carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 
 # Cartographie des résultats de pan-S pour les chats et chiens
 
@@ -676,7 +677,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
        fill = "Pan-sensibilité")+
-  scale_fill_gradient2(name = "Légende", limits = c(30, 70))
+  scale_fill_gradient2(name = "Légende", limits = c(30, 70),low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -723,7 +724,7 @@ carteAMR1_Reunion<-R1_Reunion%>%
         panel.background = element_blank()+ theme(legend.position = "none"))+
   scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
-carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 ```
 
 #### 4 : L'analyse de variance
