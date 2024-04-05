@@ -465,32 +465,18 @@ ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
   theme_minimal()
 
 ################## 1 test par population
-for(i in unique(AMR_animale$population)){
-  AMR_animale[which(AMR_animale$population==i),] %>% 
+resultats_levene <- matrix()
+
+for(i in unique(AMR_regionale$population)){
+  if(length(unique(AMR_regionale$region[which(AMR_regionale$population==i)])) > 1){
+    test <- AMR_regionale[which(AMR_regionale$population==i),] %>% 
     levene_test(`valeur AMR` ~ region)
-}
-
-temporaire <- AMR_animale %>% 
-  filter(population != "Poule-poulet")
-
-resultats_levene <- list()
-
-# Boucle sur les populations uniques
-for (i in unique(temporaire$population)) {
-  # Filtrer les données pour la population actuelle
-  data_population <- temporaire[temporaire$population == i, ]
-  
-  # Réaliser le test de Levene pour cette population
-  test <- levene_test(`valeur AMR` ~ region, data = data_population)
-  
-  # Stocker le résultat dans la liste
-  resultats_levene[[i]] <- test
+    resultats_levene[i] <- round(test$p, 5)
+  }
 }
 
 # Afficher les résultats
-print(resultats_levene)
-
-
+resultats_levene
 ```
 Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
 
@@ -1106,13 +1092,6 @@ Il sera également possible d'affirmer cette hypothèses avec un test d'homoscé
 Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
 
 ### Robustesse de l'indicateur
-
-#### 1 : Régression linéaire pour connaître la valeur de pan-S
-
-```{r}
-
-glm(AMR_animale$`valeur AMR` ~ AMR_animale$)
-```
 
 
 ### Lien à d'autres variables
