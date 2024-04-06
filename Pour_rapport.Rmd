@@ -15,8 +15,6 @@ library(dplyr)
 library(ggplot2)
 library(stringr)
 library(rstatix)
-
-rm(list=ls())
 ```
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
@@ -27,6 +25,8 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 
 ### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
+rm(list=ls())
+
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
@@ -760,7 +760,7 @@ carteAMR1_Reunion<-R1_Reunion%>%
         panel.background = element_blank()+ theme(legend.position = "none"))+
   scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
 
-#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
 ```
 
 #### 4 : L'analyse de variance
@@ -990,12 +990,15 @@ Pour bien comprendre que nous devons utiliser une régression bêta, se pencher 
 ```{r}
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
+  mutate(`valeur AMR` = `valeur AMR`*0.01) %>%
+  mutate(annee = as.numeric(annee))
 usage_humain <- usage_humain %>%
   filter(!is.na(`valeur AMR`)) %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
+  mutate(`valeur AMR` = `valeur AMR`*0.01) %>%
+  mutate(annee = as.numeric(annee))
+```
 
-
+```{r}
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit")) # Une fonction de lien logit est le choix le plus adapté pour des données comprises entre 0 et 1, AMR se comporte comme une loi binomiale comme c'est équivalent à la proportion de sensibles.
@@ -1008,7 +1011,7 @@ for (pop in unique(usage_animal$population)){
 
 for (pop in unique(usage_humain$population)){
   usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, family = binomial(link = "logit"))
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit"))
   print(pop)
   print(summary(model_glm))
   if (model_glm$null.deviance - model_glm$deviance > qchisq(0.9, length(unique(usage_filtre$annee))+1)){
@@ -1058,6 +1061,15 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
+```
+
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
+
+Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
+
+Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
+
+```{r}
 # On fait la régression bêta
 
 # Charger le package nécessaire pour les modèles de régression bêta
@@ -1073,26 +1085,42 @@ for (pop in unique(usage_animal$population)){
   print(summary(model_beta))
   print(AIC(model_beta))
 }
-usage_humain_reg <- usage_humain %>%
-  filter(annee != 2018 | region != "La Réunion")
+
+# Utile pour la comparaison de modèles 
+# usage_humain <- usage_humain %>%
+#   filter(annee != 7 | region != "La Réunion") %>%
+#   filter(annee != 10 | region != "Guadeloupe" | population != "EHPAD")
 
 for (pop in unique(usage_humain_reg$population)){
-  usage_filtre <- usage_humain_reg[which(usage_humain_reg$population == pop),]
+  usage_filtre <- usage_humain[which(usage_humain_reg$population == pop),]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
 }
 ```
+On compare plusieurs modèles à l'aide de leur AIC : 
+1 - logit(pan-S) = alpha + beta * AMU + epsilon
+2 - logit(pan-S) = alpha + beta * AMU + annee + epsilon
+3 - logit(pan-S) = alpha + beta * AMU + region + epsilon
+4 - logit(pan-S) = alpha + beta * AMU + region + annee + epsilon
 
-Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
+Le modèle 1 semble mieux que le modèle 2 pour les animaux (année que significative pour les bovins), effectivement, les populations dites d'abattoir n'ont alors plus de coefficients estimés significatifs.
+Le modèle 2 semble mieux que le modèle 1 pour les humains. 
+Le modèle 3 semble mieux que le modèle 2 selon le critère de l'AIC pour les humains, cependant les coefficients obtenus sont plus significatifs dans le modèle 2, nous conservons le modèle 2.
+Le modèle 4 n'est pas assez significatif pour les humains.
 
-Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
+Une fois le modèle choisit, nous comparons le modèle de base avec celui du log : 
+5 - logit(pan-S) = alpha + beta * log(AMU) + ...
 
-Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
+Le modèle 1 est préférable au modèle 5 pour les populations animales.
+Le modèle 5 est plus intéressant au modèle 2 pour les populations humains car les coefficients estimés sont moins proches de 0.
 
 ### Robustesse de l'indicateur
 
+```{r}
+
+```
 
 ### Lien à d'autres variables
 
