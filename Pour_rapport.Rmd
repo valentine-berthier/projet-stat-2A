@@ -859,7 +859,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abat
   labs(title = "Hausse générale de la sensibilité des populations en abattoir",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Les populations animales en abattoir\nLecture : Sur les 3 dernières années, de 2019 à 2021, les bactéries étudiées sur les veaux\nvoués à l'abattoir ontdémontré plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -868,7 +869,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),],
   labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Toutes les populations animales étudiées\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -877,7 +879,8 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
   labs(title = "Augmentation de la sensibilité aux antibiotiques des populations humaines",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Les populations humaines\nLecture : Chez toutes les populations humaines, la valeur de la pan-sensibilité à\naugmenter de 2012 à 2021. Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
   theme_minimal()
 ```
 
@@ -929,6 +932,37 @@ resultats_tests <- list()
 for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
+
+library(kableExtra)
+kbl(resultats_tests)
+
+noms<-names(resultats_tests)
+noms_ab <- grep("abattoir$", noms, ignore.case = TRUE, value = TRUE)
+
+noms_anim<-setdiff(noms,noms_ab)
+
+pvaleurs_ab<-c(signif(resultats_tests$`volaille-abattoir`$p.value,2),
+            signif(resultats_tests$`poulet-abattoir`$p.value,2),
+            signif(resultats_tests$`dinde-abattoir`$p.value,2),
+            signif(resultats_tests$`veau-abattoir`$p.value,2))
+pvaleurs_anim<-c(signif(resultats_tests$veau$p.value,2),
+                 signif(resultats_tests$`Poule-poulet`$p.value,2),
+                 signif(resultats_tests$Porc$p.value,2),
+                 signif(resultats_tests$Lapin$p.value,2),
+                 signif(resultats_tests$Dinde$p.value,2),
+                 signif(resultats_tests$Chien$p.value,2),
+                 signif(resultats_tests$Cheval$p.value,2),
+                 signif(resultats_tests$Chat$p.value,2),
+                 signif(resultats_tests$`bovin-adulte`$p.value,2))
+
+
+
+pvaleurs_ab2<-rbind(noms_ab,pvaleurs_ab)
+pvaleurs_anim2<-rbind(noms_anim,pvaleurs_anim)
+
+xtable(pvaleurs_ab2,"latex")
+xtable(pvaleurs_anim2,"latex")
+
 ```
 
 ### Lien à l'usage
@@ -1145,7 +1179,7 @@ Les facteurs qui ont été étudiés sont les suivants :
 Les jeux de données ont été remis aux propres dans analyse val 
 
 
-## Densité de médecin 
+####Densité de médecin 
 
 ```{r}
 load("donnees/cofacteurs/densite_med.rdata")
@@ -1168,7 +1202,7 @@ table2<-table1%>%
 ```
 
 
-## GES
+#### GES
 ```{r}
 
 load("donnees/cofacteurs/emission_ges.rdata")
@@ -1185,7 +1219,7 @@ table3<-order(table3,by=desc(table3$annee))
 
 table_ord_annee <- arrange(table3, desc(annee))
 ```
-##PIB
+####PIB
 ```{r}
 load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
 
@@ -1203,7 +1237,7 @@ table4<-table3%>%
 
 ```
 
-## NB DEG_JOURS
+#### NB DEG_JOURS
 ```{r}
 load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours.rdata")
 
