@@ -860,7 +860,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abat
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Cohorte : Les populations animales en abattoir\nLecture : Sur les 3 dernières années, de 2019 à 2021, les bactéries étudiées sur les veaux\nvoués à l'abattoir ontdémontré plus de résistance aux antibiotiques que les années précédentes.")) +
+       caption = str_glue("Cohorte : Les populations animales en abattoir\nLecture : Sur les 3 dernières années, de 2019 à 2021, les bactéries étudiées sur les veaux\nvoués à l'abattoir ont démontré plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
