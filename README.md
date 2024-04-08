@@ -10,7 +10,7 @@ Ce qu'il reste à faire :
 - Variabilité par région :
   - [ ] *vérifier que Val a pas écrit n'importe quoi*
   - [ ] Ajouter Tests de Levene (+Analyses)
-  - [ ] Cartes (+Analyses)
+  - [ ] Charger Cartes (FLO) (+Analyses)
 - Analyse de la variance : 
   - [ ] *vérifier que Val a pas écrit n'importe quoi*
   - [ ] Ajouter Test ANOVA (Explications, sorties et Analyses)
