@@ -933,8 +933,6 @@ for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
 
-library(kableExtra)
-kbl(resultats_tests)
 
 noms<-names(resultats_tests)
 noms_ab <- grep("abattoir$", noms, ignore.case = TRUE, value = TRUE)
