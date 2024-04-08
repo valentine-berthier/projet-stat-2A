@@ -914,7 +914,7 @@ perform_CochranArmitageTest <- function(data, population_modalite) {
   colnames(matrice) <- as.numeric(colnames(matrice))
   # Afficher le résultat du test de Cochran-Armitage
   cat("Résultats pour la modalité", population_modalite, ":\n")
-  print(CochranArmitageTest(matrice, alternative = "one.sided"))
+  print(CochranArmitageTest(matrice, alternative = "two.sided"))
 }
 
 # Appliquer la fonction pour chaque modalité de population

@@ -546,12 +546,7 @@ for (pop in unique(usage_animal$population)){
   usage_animal2 <- rbind(usage_animal2,don_pop[2:nrow(don_pop),])
 }
 
-for (pop in unique(usage_animal2$population)){
-  usage_filtre <- usage_animal2[which(usage_animal2$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
-  print(pop)
-  print(summary(model_beta))
-}
+
 ```
 
 
@@ -649,7 +644,7 @@ if(!require("lmtest")){
   require("lmtest")
 }
 # Effectuer le test de Breusch-Pagan
-bp_test <- bptest(reg_aux)
+bp_test <- levene_test(reg_aux)
 # C'EST HETEROSCEDASTIQUE...
 ```
 
