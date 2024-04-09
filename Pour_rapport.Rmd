@@ -499,6 +499,11 @@ R1_Mayotte<-regions_AMR_ville[18,]
 
 R1<-regions_AMR_ville[-c(7,10,16,17,18),]
 
+min<-min(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+max<-max(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+#bornes_ville<-c(min,max)
+bornes<-c(33,69)
+
 # Représentation de la valeur AMR de la population ville en 2021 
 
 carteAMR1<-R1%>%
@@ -511,7 +516,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population ville en France en 2021",
        fill = "Pan-sensibilité")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70),low='darkblue',high='lightblue')
+  scale_fill_gradient(name = "taux de pan-sensibilité",limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -520,7 +525,10 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  labs(title = "Guadeloupe",
+       caption = str_glue(paste("Cohorte : La population en ville en France métropolitaine et Outres-Mer dont les données sont disponibles.\nLecture : En 2021, la population en ville a un taux de pan-sensibilité compris entre ",min,"et",max,".")))+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
+
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -529,7 +537,9 @@ carteAMR1_Mart<-R1_Mart%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  labs(title = "Martinique")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
+
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -538,7 +548,8 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  labs(title = "Mayotte")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -547,7 +558,8 @@ carteAMR1_Guyane<-R1_Guyane%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  labs(title = "Guyane")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -555,16 +567,21 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+        panel.background = element_blank(),legend.position = "none")+
+  labs(title = "La Réunion")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 if(!require("patchwork")){
   install.packages("patchwork")
   library("patchwork")
 }
 
-#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+carteAMR1 / (carteAMR1_Mart | carteAMR1_Guad)
+               
 
+```
+
+```{r}
 # Cartographie des résultats de pan-S pour les bovins
 
 # ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
@@ -595,6 +612,8 @@ R1_Mayotte<-regions_AMR_bovin[14,]
 
 R1<-regions_AMR_bovin[-c(10,11,12,13,14),] 
 
+bornes
+
 # Représentation de la valeur AMR de la population bovin en 2021 
 
 carteAMR1<-R1%>%
@@ -605,9 +624,10 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population bovin en France en 2021",
-       fill = "Pan-sensibilité")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  labs(title = "Pan-sensibilité de la population bovine en France en 2021",
+       fill = "Pan-sensibilité",
+       caption = str_glue(paste("Cohorte : La population bovine en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La Normandie présente le taux de pan-sensibilité le plus élevé chez les bovins pour l'année 2021 (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
+  scale_fill_gradient(name = "taux de pan-sensibilité", limits = bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -616,7 +636,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -625,7 +645,7 @@ carteAMR1_Mart<-R1_Mart%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -634,7 +654,7 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -643,7 +663,7 @@ carteAMR1_Guyane<-R1_Guyane%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -651,11 +671,18 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
-#carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+carteAMR1
 
+min<-min(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+max<-max(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+bornes_bovins<-c(min,max)
+
+```
+
+```{r}
 # Cartographie des résultats de pan-S pour les chats et chiens
 
 # ETAPE 1 : on récupère les régions où la valeur AMR a été calculée
@@ -686,7 +713,7 @@ R1_Mayotte<-regions_AMR_chienchat[14,]
 
 R1<-regions_AMR_chienchat[-c(10,11,12,13,14),]
 
-# Représentation de la valeur AMR de la population bovin en 2021 
+# Représentation de la valeur AMR de la population chien et chat en 2021 
 
 carteAMR1<-R1%>%
   ggplot() +
@@ -697,8 +724,9 @@ carteAMR1<-R1%>%
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
-       fill = "Pan-sensibilité")+
-  scale_fill_gradient2(name = "Légende", limits = c(30, 70),low='darkblue',high='lightblue')
+       fill = "Pan-sensibilité",
+       caption = str_glue(paste("Cohorte : La population des bovins en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de pan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"), et donc la résistance la plus élevée, pour l'année 2021.")))+
+  scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -707,7 +735,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Mart<-R1_Mart%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -716,7 +744,7 @@ carteAMR1_Mart<-R1_Mart%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_gradient2(name = "Légende", limits = c(30, 70))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Mayotte<-R1_Mayotte%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -725,7 +753,7 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -734,7 +762,7 @@ carteAMR1_Guyane<-R1_Guyane%>%
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -742,10 +770,15 @@ carteAMR1_Reunion<-R1_Reunion%>%
         axis.ticks = element_blank(), 
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), 
-        panel.background = element_blank()+ theme(legend.position = "none"))+
-  scale_fill_continuous(name = "Légende", limits = c(30, 70), breaks = seq(30, 70, by = 10))
+        panel.background = element_blank(),legend.position = "none")+
+  scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
-carteAMR1 / ((carteAMR1_Mart / carteAMR1_Mayotte) | (carteAMR1_Guyane / carteAMR1_Reunion / carteAMR1_Guad))
+carteAMR1
+
+min<-min(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+max<-max(R1$`valeur AMR`,R1_Guad$`valeur AMR`,R1_Mayotte$`valeur AMR`,R1_Reunion$`valeur AMR`,R1_Mart$`valeur AMR`,R1_Guyane$`valeur AMR`,na.rm = TRUE)
+bornes_ch<-c(min,max)
+
 ```
 
 #### 4 : L'analyse de variance
@@ -830,7 +863,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abat
   labs(title = "Hausse générale de la sensibilité des populations en abattoir",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Les populations animales en abattoir\nLecture : Sur les 3 dernières années, de 2019 à 2021, les bactéries étudiées sur les veaux\nvoués à l'abattoir ont démontré plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -839,7 +873,8 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),],
   labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Toutes les populations animales étudiées\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -848,7 +883,8 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
   labs(title = "Augmentation de la sensibilité aux antibiotiques des populations humaines",
        x = NULL,
        y = "Pan-sensibilité moyenne",
-       color = "Population") +
+       color = "Population",
+       caption = str_glue("Cohorte : Les populations humaines\nLecture : Chez toutes les populations humaines, la valeur de la pan-sensibilité à\naugmenter de 2012 à 2021. Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
   theme_minimal()
 ```
 
@@ -882,7 +918,7 @@ perform_CochranArmitageTest <- function(data, population_modalite) {
   colnames(matrice) <- as.numeric(colnames(matrice))
   # Afficher le résultat du test de Cochran-Armitage
   cat("Résultats pour la modalité", population_modalite, ":\n")
-  print(CochranArmitageTest(matrice, alternative = "one.sided"))
+  print(CochranArmitageTest(matrice, alternative = "two.sided"))
 }
 
 # Appliquer la fonction pour chaque modalité de population
@@ -900,6 +936,35 @@ resultats_tests <- list()
 for (modalite in modalites_population_animale) {
   resultats_tests[[modalite]] <- perform_CochranArmitageTest(AMR_nationale_animal, modalite)
 }
+
+
+noms<-names(resultats_tests)
+noms_ab <- grep("abattoir$", noms, ignore.case = TRUE, value = TRUE)
+
+noms_anim<-setdiff(noms,noms_ab)
+
+pvaleurs_ab<-c(signif(resultats_tests$`volaille-abattoir`$p.value,2),
+            signif(resultats_tests$`poulet-abattoir`$p.value,2),
+            signif(resultats_tests$`dinde-abattoir`$p.value,2),
+            signif(resultats_tests$`veau-abattoir`$p.value,2))
+pvaleurs_anim<-c(signif(resultats_tests$veau$p.value,2),
+                 signif(resultats_tests$`Poule-poulet`$p.value,2),
+                 signif(resultats_tests$Porc$p.value,2),
+                 signif(resultats_tests$Lapin$p.value,2),
+                 signif(resultats_tests$Dinde$p.value,2),
+                 signif(resultats_tests$Chien$p.value,2),
+                 signif(resultats_tests$Cheval$p.value,2),
+                 signif(resultats_tests$Chat$p.value,2),
+                 signif(resultats_tests$`bovin-adulte`$p.value,2))
+
+
+
+pvaleurs_ab2<-rbind(noms_ab,pvaleurs_ab)
+pvaleurs_anim2<-rbind(noms_anim,pvaleurs_anim)
+
+xtable(pvaleurs_ab2,"latex")
+xtable(pvaleurs_anim2,"latex")
+
 ```
 
 ### Lien à l'usage
@@ -1109,7 +1174,7 @@ Les facteurs qui ont été étudiés sont les suivants :
 Les jeux de données ont été remis aux propres dans analyse val 
 
 
-## Densité de médecin 
+####Densité de médecin 
 
 ```{r}
 load("donnees/cofacteurs/densite_med.rdata")
@@ -1132,7 +1197,7 @@ table2<-table1%>%
 ```
 
 
-## GES
+#### GES
 ```{r}
 
 load("donnees/cofacteurs/emission_ges.rdata")
@@ -1149,7 +1214,7 @@ table3<-order(table3,by=desc(table3$annee))
 
 table_ord_annee <- arrange(table3, desc(annee))
 ```
-##PIB
+####PIB
 ```{r}
 load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/PIBrevenu_national_12_21.rdata")
 
@@ -1167,7 +1232,7 @@ table4<-table3%>%
 
 ```
 
-## NB DEG_JOURS
+#### NB DEG_JOURS
 ```{r}
 load("~/Documents/*ENSAI*/2A/S2/PS2A/projet-stat-2A/donnees/cofacteurs/nb_degjours.rdata")
 
