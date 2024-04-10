@@ -1206,7 +1206,8 @@ for (pop in unique(usage_humain$population)){
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
   print(pop)
-  print(predictions)
+  table_prediction <- cbind(unique(usage_prediction_filtre$region), predictions)
+  print(table_prediction)
 }
 ```
 
