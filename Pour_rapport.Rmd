@@ -390,9 +390,6 @@ La variabilité entre les populations a déjà pu être observée dans l'analyse
 # Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
 AMR_humaine %>% levene_test(`valeur AMR` ~ population)
 AMR_animale %>% levene_test(`valeur AMR` ~ population)
-
-
-
 ```
 Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
 
@@ -449,22 +446,8 @@ ggplot(AMR_humaine, aes(x = `valeur AMR`, y = region)) +
        x = "Valeur de l'AMR",
        y = "Région") +
   theme_minimal()
-
-################## 1 test par population
-resultats_levene <- matrix()
-
-for(i in unique(AMR_regionale$population)){
-  if(length(unique(AMR_regionale$region[which(AMR_regionale$population==i)])) > 1){
-    test <- AMR_regionale[which(AMR_regionale$population==i),] %>% 
-    levene_test(`valeur AMR` ~ region)
-    resultats_levene[i] <- round(test$p, 5)
-  }
-}
-
-# Afficher les résultats
-resultats_levene
 ```
-Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains. C'est assez contraire à ce que nous disais Mme Chauvin.
+Les variances régionales de la pan-S sont significativements différentes pour les populations animales mais par pour les humains (EHPAD et ES hemo). C'est assez contraire à ce que nous disais Mme Chauvin.
 
 ```{r}
 # Cartographie des résultats de pan-S en ville
@@ -810,10 +793,39 @@ model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
 ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
 
 ## 3 - Hypothèse d’homogénéité des variances
-# Hypothèse vérifiée pour la variable annee mais pas pour la variable region. Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes.
+# Hypothèse vérifiée pour la variable annee (vu plus tôt) et pour la variable region (lorsqu'on prend chaque population indépendamment). Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes --> chaque population indépendante. 
+################## 1 test par population pour les régions
+resultats_levene <- matrix()
 
-# Calculer les parts de variance associée à la variance totale.
-anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
+for(i in unique(AMR_regionale$population)){
+  if(length(unique(AMR_regionale$region[which(AMR_regionale$population==i)])) > 1){
+    test <- AMR_regionale[which(AMR_regionale$population==i),] %>% 
+    levene_test(`valeur AMR` ~ region)
+    resultats_levene[i] <- round(test$p, 5)
+  }
+}
+
+# Afficher les résultats
+resultats_levene
+
+###### on calculemaintenant la part de la variance associée à chaque variable, pour chaque population.
+# Liste pour stocker les résultats des ANOVAs par population
+anova_results <- list()
+
+# Boucle sur les niveaux de la variable "population"
+for (pop_level in unique(AMR_regionale$population)) {
+  # Sous-ensemble de données pour le niveau de population actuel
+  subset_data <- subset(AMR_regionale, population == pop_level)
+  
+  anova_results[[pop_level]] <- anova_test(lm(`valeur AMR` ~ region + annee, data = subset_data))
+}
+
+############## IL FAUT DEGAGER LES PUTAINS DE COCHONS ABATTORORREIORI
+# Afficher les résultats pour chaque niveau de population
+for (i in 1:length(anova_results)) {
+  print(anova_results[[i]])
+}
+anova_test(`valeur AMR` ~ population + region + annee, data = AMR_regionale)
 ```
 La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
 
@@ -894,6 +906,8 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
 Le test de Cochran Armitage est utilisé ici sur la proportion d'indivdius pan-sensibles parmi les effectifs testés. Ce test n'est approprié que lorsqu'une variable a deux niveaux et que l'autre variable est ordinale. Dans notre cas, la variable binomiale est la proportion de pan-sensible séparée en nombre de pan-sensible et nombre de résistants. La variable ordinale correspond aux années de l'étude. L'hypothèse nulle du test est qu'il n'y a pas de tendance observable dans les données.
 
 Nous choisissons l'hypothèse alternative unilatérale car ce que nous cherchons à tester est qu'une baisse de la sensibilité apparaît au fil du temps.
+
+Intégrer les poids dans le calcul ??
 
 ```{r}
 # Chargement des bibliothèques
