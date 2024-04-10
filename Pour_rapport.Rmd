@@ -389,9 +389,6 @@ La variabilité entre les populations a déjà pu être observée dans l'analyse
 # Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
 AMR_humaine %>% levene_test(`valeur AMR` ~ population)
 AMR_animale %>% levene_test(`valeur AMR` ~ population)
-
-
-
 ```
 Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
 
