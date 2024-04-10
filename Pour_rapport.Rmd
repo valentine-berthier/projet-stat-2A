@@ -831,8 +831,7 @@ anova_results <- list()
 for (pop_level in unique(AMR_regionale$population)) {
   # Sous-ensemble de données pour le niveau de population actuel
   subset_data <- subset(AMR_regionale, population == pop_level)
-  
-  anova_results[[pop_level]] <- anova_test(lm(`valeur AMR` ~ region + annee, data = subset_data))
+  anova_results[[pop_level]] <- anova_test(lm(`valeur AMR` ~ region + annee, data =subset_data))
 }
 
 ############## IL FAUT DEGAGER LES PUTAINS DE COCHONS ABATTORORREIORI
