@@ -15,6 +15,8 @@ library(dplyr)
 library(ggplot2)
 library(stringr)
 library(rstatix)
+
+rm(list=ls())
 ```
 
 Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vraiment indispensable. Il faudrait que ce fichier ne contienne que les graphiques permettant la validation de l'indicateur.
@@ -25,8 +27,6 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 
 ### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
-rm(list=ls())
-
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
@@ -107,13 +107,13 @@ usage$population <- as.factor(usage$population)
 usage_animal <- usage %>%
   filter(famille == "Animale") %>%
   arrange(population, -annee) %>%
-  mutate(region = as.factor(region))
+  mutate(annee = as.factor(annee), region = as.factor(region))
 usage_humain <- usage %>%
   filter(famille == "Humaine") %>%
   select(population, annee, region, `valeur AMU`) %>%
   left_join(AMR_humaine[,-c(1, 4)], by = join_by(region, annee, population)) %>%
   arrange(population, -annee) %>%
-  mutate(region = as.factor(region))
+  mutate(annee = as.factor(annee), region = as.factor(region))
 ```
 
 ### Transformation pour la cartographie
@@ -135,51 +135,19 @@ reg_2019<-read.csv("donnees/region2019.csv") # données externes d'infos sur les
 load("donnees/reg_metropole.rdata") 
 ```
 
-### Données de 2022 pour la prédiction
-
-```{r}
-usage_prediction_animal <- read_excel("donnees/AMU2022.xlsx", sheet = "données animales nationales")
-colnames(usage_prediction_animal) <- c("population", "annee", "valeur AMU", "valeur AMR", "effectif AMR")
-
-usage_prediction_humain <- read_excel("donnees/AMU2022.xlsx", sheet = "données humaines régionales")
-colnames(usage_prediction_humain) <- c("population", "annee", "region", "valeur AMU")
-
-# Si le modèle contient le paramètre region, alors il faut supprimer les données pour lesquelles on ne peut pas faire de prédiction (Guyane, Mayotte et Ile-de-France, et La Réunion pour les autres populations qu'ES)
-#usage_prediction_humain <- usage_prediction_humain %>%
-#  filter(region != "Guyane") %>%
-#  filter(region != "Ile-de-France") %>%
-#  filter(region != "Mayotte") %>%
-#  filter(region != "La Réunion" | population != "ville") %>%
-#  filter(region != "La Réunion" | population != "EHPAD")
-```
 
 ## Analyse descriptive
 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
 ```{r,echo=FALSE}
-label <- c("Veau", "Lapin", "Poulet", "Porc", "Volaille", "Dinde", "Caprin", "EHPAD", "Veau", "ES-hemoculture", "Ovin", "ES", "Porc", "Ville", "Cheval","Volaille", "Chien", "Bovin", "Chat")
+label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Caprin", "Veau", "EHPAD", "ES-hemoculture", "Ovin", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
 
-ggplot(AMR_regionale, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille2))+
+ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median), fill = famille2))+
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
-       subtitle = "Comparaison des valeurs Pan-S entre animaux et humains",
-       caption = "Note: Chaque ligne de données correspond à une région et une année",
-       y = NULL,
-       x = "AMR moyen",
-       x = "Valeur Pan-S",
-       fill = "Famille")+
-  theme_minimal()+
-  scale_fill_manual(values = c("#90fc9b", "#4b9c4f", "#fa9c43"))+
-  scale_y_discrete(labels = label)
-
-label <- c("Veau", "Lapin", "Porc", "Poulet", "Volaille", "Dinde", "Caprin", "EHPAD", "Veau", "ES-hemoculture", "Ovin", "ES", "Porc","Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Bovin", "Chat")
-
-ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, mean), fill = famille2))+
-  geom_boxplot()+
-  labs(title = "Des résultats dispersés pour toutes les populations",
-       subtitle = "Comparaison des valeurs Pan-S entre animaux et humains (France entière ajoutée)",
-       caption = "Note: Chaque ligne de données correspond à une région ou la france entière et une année",
+       subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les plus résistants aux antibiotiques.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
@@ -421,6 +389,9 @@ La variabilité entre les populations a déjà pu être observée dans l'analyse
 # Test de levene d'égalité de variance des valeurs de pan-S entre les années (H0: variances égales)
 AMR_humaine %>% levene_test(`valeur AMR` ~ population)
 AMR_animale %>% levene_test(`valeur AMR` ~ population)
+
+
+
 ```
 Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous observons une différence significative entre les variances de la pan-S par population. Par conséquent, nous ne pouvons pas supposer l’homogénéité des variances parmi les différentes populations étudiées.
 
@@ -1087,13 +1058,11 @@ Pour bien comprendre que nous devons utiliser une régression bêta, se pencher 
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
   mutate(`valeur AMR` = `valeur AMR`*0.01)
-
 usage_humain <- usage_humain %>%
   filter(!is.na(`valeur AMR`)) %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01) 
-```
+  mutate(`valeur AMR` = `valeur AMR`*0.01)
 
-```{r}
+
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit")) # Une fonction de lien logit est le choix le plus adapté pour des données comprises entre 0 et 1, AMR se comporte comme une loi binomiale comme c'est équivalent à la proportion de sensibles.
@@ -1106,7 +1075,7 @@ for (pop in unique(usage_animal$population)){
 
 for (pop in unique(usage_humain$population)){
   usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, family = binomial(link = "logit"))
+  model_glm <- glm(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, family = binomial(link = "logit"))
   print(pop)
   print(summary(model_glm))
   if (model_glm$null.deviance - model_glm$deviance > qchisq(0.9, length(unique(usage_filtre$annee))+1)){
@@ -1156,15 +1125,6 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
-```
-
-Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
-
-Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
-
-Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
-
-```{r}
 # On fait la régression bêta
 
 # Charger le package nécessaire pour les modèles de régression bêta
@@ -1175,74 +1135,39 @@ if(!require("betareg")){
 # Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU` + annee, weights = `effectif AMR`, link = "logit") # L'année et la région n'entrent pas en jeu dans la régression bêta, le premier car il n'est pas significatif (si on analyse toutes les populations en même temps) et n'a pas plusieurs même modalité (si on analyse une population après l'autre) et le second car l'usage n'existe pas au niveau régional
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit") # L'année et la région n'entrent pas en jeu dans la régression bêta, le premier car il n'est pas significatif (si on analyse toutes les populations en même temps) et n'a pas plusieurs même modalité (si on analyse une population après l'autre) et le second car l'usage n'existe pas au niveau régional
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
 }
-
-# Utile pour la comparaison de modèles 
-# usage_humain <- usage_humain %>%
-#   filter(annee != 7 | region != "La Réunion") %>%
-#   filter(annee != 10 | region != "Guadeloupe" | population != "EHPAD")
+usage_humain_reg <- usage_humain %>%
+  filter(annee != 2018 | region != "La Réunion")
 
 for (pop in unique(usage_humain_reg$population)){
-  usage_filtre <- usage_humain[which(usage_humain_reg$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee + region, weights = `effectif AMR`, link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
+  usage_filtre <- usage_humain_reg[which(usage_humain_reg$population == pop),]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
-  plot(model_beta)
 }
 ```
-On compare plusieurs modèles à l'aide de leur AIC (les epsilon dépendent des effectifs testés) : 
-1 - logit(pan-S) = alpha + beta * AMU + epsilon 
-2 - logit(pan-S) = alpha + beta * AMU + annee + epsilon
-3 - logit(pan-S) = alpha + beta * AMU + region + epsilon
-4 - logit(pan-S) = alpha + beta * AMU + region + annee + epsilon
 
-Le modèle 1 semble mieux que le modèle 2 pour les animaux (année que significative pour les bovins), effectivement, les populations dites d'abattoir n'ont alors plus de coefficients estimés significatifs.
-Le modèle 2 semble mieux que le modèle 1 pour les humains. 
-Le modèle 3 semble mieux que le modèle 2 selon le critère de l'AIC pour les humains, cependant les coefficients obtenus sont plus significatifs dans le modèle 2, nous conservons le modèle 2.
-Le modèle 4 n'est pas assez significatif pour les humains.
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7 pour les animaux et entre 0,3 et 0,7 pour les humains. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un très petit intervalle et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
 
-Une fois le modèle choisit, nous comparons le modèle de base avec celui du log : 
-5 - logit(pan-S) = alpha + beta * log(AMU) + ...
+Il sera également possible d'affirmer cette hypothèses avec un test d'homoscédasticité.
 
-Le modèle 1 est préférable au modèle 5 pour les populations animales.
-Le modèle 5 est plus intéressant au modèle 2 pour les populations humains car les coefficients estimés sont moins proches de 0.
-
-Les résidus des modèles sont assez dispersés pour valider l'hypothèse d'utilisation d'une régression bêta.
+Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta. L'AIC est toujours plus faible pour le modèle bêta que le modèle linéaire généralisé logit avec loi binomiale. Ainsi, il est préférable de garder la régression bêta.
 
 ### Robustesse de l'indicateur
 
-```{r}
-for (pop in unique(usage_animal$population)){
-  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
-  usage_prediction_filtre <- usage_prediction_animal[which(usage_prediction_animal$population == pop), c(2, 3)]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
-  predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
-  print(pop)
-  print(predictions)
-}
-
-for (pop in unique(usage_humain$population)){
-  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  usage_prediction_filtre <- usage_prediction_humain[which(usage_prediction_humain$population == pop), c(2, 4)]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU` + annee, link = "logit")
-  predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
-  print(pop)
-  print(predictions)
-}
-```
-
-Une estimation par région pour les populations humains.
 
 ### Lien à d'autres variables
 
 #### 1 : Analyse factorielle
 
 ```{r}
+rm(list=ls())
+AMR<-read_xlsx("donnees/donnees_AMR.xlsx")
 familles<-unique(AMR$famille)
 AMR_animale<-AMR%>%
   filter(famille==familles[1])
