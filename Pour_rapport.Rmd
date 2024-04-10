@@ -173,8 +173,9 @@ Il s’agit ici de montrer que la proportion de pan-sensibles est calculable pou
 print(paste("nombre moyen d'isolats considérés en France entière: ", round(mean(AMR_nationale$`effectif AMR`), 0)))
 print(paste("nombre moyen d'isolats considérés en découpage par région: ", round(mean(AMR_regionale$`effectif AMR`), 0)))
 
-AMR %>%
-  group_by(population, annee, region) %>%
+AMR_nationale %>%
+  group_by(famille, annee) %>%
+  select(famille, annee, `effectif AMR`) %>%
   summarise(`nombre moyen d'isolats` = round(mean(`effectif AMR`), 0))%>%
   arrange(desc(`nombre moyen d'isolats`))
 AMR %>%
@@ -219,7 +220,7 @@ ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte
   labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
        y = "Taux d'effectif perdu",
-       caption = str_glue("Cohorte : population animale\nLecture : Entre 2012 et 2021, 50% des années ont fait face à une perte régionale d'au moins 50% pour la population des porcs."))+
+       caption = str_glue("Données : Populations animales\nNote de lecture : Entre 2012 et 2021, la moitié des années ont fait face à une perte régionale d'au moins 50% chez les porcs."))+
   scale_y_continuous(labels = scales::label_percent(scale = 100))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
   annotate("text", x = 11, y = 0.18, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)+
