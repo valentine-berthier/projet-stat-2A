@@ -809,21 +809,22 @@ for(i in unique(AMR_regionale$population)){
 resultats_levene
 
 ###### on calculemaintenant la part de la variance associée à chaque variable, pour chaque population.
-# Liste pour stocker les résultats des ANOVAs par population
+AMR_regionale <- subset(AMR_regionale, population != "porc-abattoir")
+
 anova_results <- list()
 
-# Boucle sur les niveaux de la variable "population"
 for (pop_level in unique(AMR_regionale$population)) {
   # Sous-ensemble de données pour le niveau de population actuel
   subset_data <- subset(AMR_regionale, population == pop_level)
   anova_results[[pop_level]] <- anova_test(lm(`valeur AMR` ~ region + annee, data =subset_data))
 }
 
-############## IL FAUT DEGAGER LES PUTAINS DE COCHONS ABATTORORREIORI
 # Afficher les résultats pour chaque niveau de population
 for (i in 1:length(anova_results)) {
+  cat("Population:", unique(AMR_regionale$population)[i], "\n")
   print(anova_results[[i]])
 }
+
 anova_test(`valeur AMR` ~ population + region + annee, data = AMR_regionale)
 ```
 La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
