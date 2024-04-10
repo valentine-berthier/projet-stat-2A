@@ -132,6 +132,11 @@ ggplot(AMR_animale, aes(x = region, y = `valeur AMR`)) +
 moyenne_par_region_population <- AMR_animale %>%
   group_by(region, population) %>%
   summarize(moyenne_AMR = mean(`valeur AMR`), .groups = 'drop')
+
+modele_anova <- aov(moyenne_AMR ~ region + population, data = moyenne_par_region_population)
+summary(modele_anova)
+
+# je n'arrive pas à réaliser l'analyse que je veux :()
 ```
 
 
@@ -139,13 +144,6 @@ moyenne_par_region_population <- AMR_animale %>%
 ```{r}
 AMR_animale_fr %>%
   group_by(population, famille) %>%
-  summarize(
-    variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
-    .groups = 'drop'
-  )
-
-AMR_animale %>%
-  group_by(region, famille) %>%
   summarize(
     variance_intragroupe = sum((`valeur AMR` - mean(`valeur AMR`))^2),
     .groups = 'drop'
@@ -388,6 +386,9 @@ Est ce que les DROMCOM ne sont pas pris en compte dans les valeurs "Nationale" ?
 ## Les situations et variables sont-elles contrastées ?
 
 ```{r}
+#boxplot(AMR$population ~ AMR$`valeur AMR`)
+boxplot(AMR$`valeur AMR`~AMR$population)
+
 # Réaliser la ANOVA
 data_anova <- subset(AMR_humaine, select = -c(1, 4))
 data_anova$population <- as.factor(AMR_humaine$population)
@@ -401,10 +402,7 @@ summary(anova)
 plot(anova)
 
 # autre test anova
-if(!require("rstatix")){
-  install.packages("rstatix")
-  require("rstatix")
-}
+library(rstatix)
 anova_test(`valeur AMR` ~ population + region + annee, data = data_anova)
 
 ### Valeurs aberrantes
@@ -416,20 +414,14 @@ data_anova <- data_anova[-c(230,244,264),] # ça dégage
 # Construire le modèle linéaire
 model  <- lm(`valeur AMR` ~ population + region + annee, data = data_anova)
 # Créer un QQ plot des résidus
-if(!require("ggpubr")){
-  install.packages("ggpubr")
-  require("ggpubr")
-}
-# ggqqplot(residuals(model))
-# shapiro_test(residuals(model))
-
+library(ggpubr)
+ggqqplot(residuals(model))
+shapiro_test(residuals(model))
 
 ### Homogénéité des variances
-
-# data_anova %>% levene_test(`valeur AMR` ~ population)
-# data_anova %>% levene_test(`valeur AMR` ~ annee)
-# data_anova %>% levene_test(`valeur AMR` ~ region)
-
+data_anova %>% levene_test(`valeur AMR` ~ population)
+data_anova %>% levene_test(`valeur AMR` ~ annee)
+data_anova %>% levene_test(`valeur AMR` ~ region)
 # On peut valider l'hypothèse pour annee et region mais pas pour population, cela signifie que les variances ne sont pas homogènes dans les différents groupes.
 ```
 La variance variance résiduelle est la variance intra-groupe. Cela nous indique à quel point chaque participant est différent de la moyenne de son propre groupe.
@@ -437,32 +429,29 @@ F : variance.inter.groups/variance.intra.groups.
 
 ### AMU et AMR
 
-#### Famille animale
-
 ```{r}
-usage <- read_excel("donnees/D_usage.xlsx")
-usage$population <- as.factor(usage$population)
+usage_animal <- read_excel("donnees/D_animale_nationale_avec_alea_corrige.xlsx", range = "B1:G61") # range permet de ne pas prendre en compte la première ligne qui contient les identifiants
 
-usage_animal <- usage %>%
-  filter(famille == "Animale") %>%
+usage_animal$population <- as.factor(usage_animal$population)
+
+usage_animal <- usage_animal %>%
   arrange(population, -annee)
 ```
 
-Des regroupements entre populations animales ont été effectués dans ce jeu de données : 
+Des regroupements entre populations ont été effectués dans ce jeu de données. Les regroupements sont : 
 veau, bovin-adulte, bovin-abattoir = Bovins
 chat, chien	= Chats et chiens
 cheval = Chevaux
 volaille, volaille-abattoir	= Volailles
 porc, porc-abattoir = Porcs
 lapin = Lapins
-La pan-sensibilité est alors calculée en prenant en compte la biomasse de chaque espèce. Les calculs ont déjà été fait pour les groupes de population, mais seront peut-être à expliquer dans le rapport.
 
 ```{r}
 usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
 
-ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
-  geom_path(size = 0.8)+
-  geom_point(aes(colour = path), size = 1)+
+ggplot(data = usage_animal, aes(x = `valeur AMR`, y = Valeur_AMU))+
+  geom_path()+
+  geom_point(aes(colour = path), size = 3)+
   theme_minimal()+
   theme(legend.position = "top")+
   labs(x = "Pan-S",
@@ -492,7 +481,7 @@ ggplot(data = usage_animal)+
   theme_minimal()+
   labs(title = "Dispertion des valeurs AMR")
 ```
-Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un intervalle plus petit que 0,1 et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quant à l'hétéroscédasticité de la variable.
+Il n'y a effectivement pas de valeurs proches de la borne supérieure, les valeurs se regroupent entre 0,1 et 0,7. De plus, pour chaque population, la majorité des valeurs de la variable (75%) se trouvent dans un intervalle plus petit que 0,1 et si on ne découpe pas par population, 75% des valeurs se trouvent dans l'intervalle [0,3; 0,6]. On peut conclure quand à l'hétéroscédasticité de la variable.
 
 ```{r}
 # Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
@@ -512,113 +501,39 @@ En violet, un échantillon suivant une loi bêta de paramètres renseignés dans
 Il faudra tester plusieurs fonctions de lien pour la régression bêta avant de se rendre compte de la meilleure.
 
 ```{r}
-# Charger le package nécessaire pour les modèles de régression bêta
-if(!require("betareg")){
-  install.packages("betareg")
-  library("betareg")
-}
+library(betareg)
 
-# Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
+model_glm <- glm(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, family
+= binomial(link = "logit")) # 0 permet de dire qu'on ne souhaite pas d'intercept
+summary(model_glm)
+
+model_beta <- betareg(data = usage_animal, `valeur AMR` ~ 0 + Valeur_AMU + population, link = "logit")
+summary(model_beta)
+
+plot(model_glm)
+plot(model_beta)
+```
+
+Globalement les coefficients ne changent pas entre les deux modélisation, cependant la régression bêta semble bien plus significative que la régression glm avec come fonction de lien une binomiale. Les valeurs observées ne sont pas les mêmes que celles fournies dans le document de Laurence Macmago.
+
+Ici, les résidus sont assez dispersés, on peut prouver l'utilité du modèle de régression bêta. Pour le modèle logit, le qqplot ne suit pas exactement la première bissectrice, il dérive vers la gauche. Il faudra mieux interpréter plus tard mais c'est un début d'interprétation.
+
+# Séparation en plusieurs modèles de régression bêta (un par population)
+
+```{r}
 for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, link = "logit")
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ Valeur_AMU, link = "logit")
   print(pop)
   print(summary(model_beta))
 }
 ```
 
-print le qqplot pour voir si la normalité des données est bien observée.
-
-##### Lien avec l'usage de l'année n-1 plutôt qu'avec l'année n
-
-```{r}
-# On crée le nouveau data frame où l'usage de l'année n-1 se trouve en face de la pan-S de l'année n
-usage_animal <- usage_animal %>%
-  arrange(population, annee)
-
-usage_animal2 <- data.frame(matrix(vector(), 0, 9, dimnames=list(c(), colnames(usage_animal))))
-
-for (pop in unique(usage_animal$population)){
-  don_pop <- usage_animal[which(usage_animal$population == pop),]
-  for (ligne in 0:(nrow(don_pop)-2)){
-    don_pop$`valeur AMU`[nrow(don_pop) - ligne] <- don_pop$`valeur AMU`[nrow(don_pop) - ligne - 1]
-  }
-  usage_animal2 <- rbind(usage_animal2,don_pop[2:nrow(don_pop),])
-}
-
-
-```
-
-
-#### Famille Humaine
-
-```{r}
-# Il faut récupérer les données de pan-sensibilité du fichier données_AMR
-usage_humain <- usage %>%
-  filter(famille == "Humaine") %>%
-  select(population, annee, region, `valeur AMU`) %>%
-  left_join(AMR_humaine[,-c(1, 4)], by = join_by(region, annee, population)) %>%
-  arrange(population, -annee)
-
-usage_humain$population <- as.factor(usage_humain$population)
-usage_humain$region <- as.factor(usage_humain$region)
-```
-
-```{r}
-# Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100. De plus, on ne garde que les observations pour lesquelles la valeur de pan-sensibilité est renseignée.
-usage_humain <- usage_humain %>%
-  filter(!is.na(`valeur AMR`)) %>%
-  mutate(`valeur AMR` = `valeur AMR`*0.01)
-```
-
-```{r}
-# On vérifie que les données AMR sont hétéroscédastiques 
-ggplot(data = usage_humain)+
-  geom_boxplot(aes(x = `valeur AMR`, y = population), na.rm = TRUE)+
-  scale_x_continuous(limits = c(0, 1), breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))+
-  theme_minimal()+
-  labs(title = "Dispertion des valeurs AMR")
-```
-
-Nous observons des données hétéroscédastiques par population, en EHPAD la variance est bien plus grande qu'en ville. Il sera possible de tester ce critère à l'aide d'un test d'homoscédasticité. De plus, on ne remarque pas de données proche des bornes de l'intervalle, cela justifie également le fait d'utiliser une régression bêta.
-
-```{r}
-# Pour utiliser la régression bêta, la variable de résistance doit suivre une loi bêta
-# Regardons la modélisation d'une loi bêta suivant les valeurs de pan-sensibilité de chaque population
-
-for (pop in unique(usage_humain$population)){
-  mu <- mean(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE)
-    phi <- (mu * (1 - mu)) / var(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], na.rm = TRUE) - 1
-  a <- mu * phi
-  b <- (1 - mu) * phi
-  hist(usage_humain$`valeur AMR`[which(usage_humain$population == pop)], freq = FALSE, breaks = 30, main = pop, xlim = c(0, 1), xlab = "Pan-S")
-  lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
-}
-```
-
-Nos données sont bien semblables à un échantillon de loi bêta, nous pouvons utiliser une régression bêta.
-
-```{r}
-# Un modèle de régression par population, car l'usage n'est pas défini de la même manière selon la population
-for (pop in unique(usage_humain$population)){
-  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, link = "logit")
-  print(pop)
-  print(summary(model_beta))
-}
-```
-
-Il faudra voir pourquoi on mets du log pour les valeurs AMU et peut-être qu'il faudrait ajouter les régions à l'analyse car elles influent également sur les résultats (mais pour le moment j'ai une erreur si j'ajoute région...). On peut tester la significativité des coefficients car je les trouve très proches de 0.
-
-# Modèle de panel 
+# modèle de panel
 ```{r}
 # Charger le package nécessaire pour les modèles linéaires mixtes
-if(!require("lme4")){
-  install.packages("lme4")
-  require("lme4")
-}
+library(lme4)
 
-library(rstatix)
 # On utilise un modèle linéaire mixte étant donné qu'on a une variable continue.
 modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data = usage_animal, control=lmerControl(optimizer="bobyqa"))
 
@@ -627,73 +542,15 @@ modele_panel <- lmer(`valeur AMR` ~ Valeur_AMU + annee + (1 | population), data 
 # Afficher un résumé des résultats du modèle
 summary(modele_panel)
 
-# Hypothèse de normalité
-shapiro_test(residuals(modele_panel)) #p-value > 0,05 donc on rejette l'hypothèse nulle, ainsi l'hypothèse de normalité des résidus est vérifiée.
-
-#### Test hetéroscédasticité
-# Ajuster votre modèle de données de panel
-modele <- plm(usage_animal$`valeur AMR` ~ Valeur_AMU + annee, data = usage_animal, model = "pooling")
-
-# Obtenir les résidus
-residus <- resid(modele)
-
-# Ajuster la régression auxiliaire
-reg_aux <- lm(residus^2 ~ usage_animal$Valeur_AMU + usage_animal$annee)
-if(!require("lmtest")){
-  install.packages("lmtest")
-  require("lmtest")
-}
-# Effectuer le test de Breusch-Pagan
-bp_test <- levene_test(reg_aux)
-# C'EST HETEROSCEDASTIQUE...
+shapiro_test(residuals(modele_panel))
 ```
-
 Cette sortie indique que l'AMU) a un effet significatif sur la valeur AMR. La corrélation entre l'AMR (intercept) et l'AMU est négative, ce qui signifie que l'AMR est plus élevée lorsque la valeur de l'AMU est plus faible.
-Cependant après une analyse les données semblent hétéroscédastique, on va donc privilégier une regression bêta.
 
-# Prédiction
-
-## Apprentissage supervisé ?
-
+# Install
 ```{r}
-# Chargement de la bibliothèque requise
-library(rpart)
-library(rpart.plot)
-
-data_arbre_cart <- AMR_animale %>%
-  select(`valeur AMR`, population, annee, region) %>%
-  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
-
-# Construction de l'arbre de décision
-arbre_decision <- rpart(`valeur AMR` ~ population + region, data = data_arbre_cart)
-
-# Affichage de l'arbre
-print(arbre_decision)
-
-# Visualisation graphique de l'arbre avec plus de branches
-rpart.plot(arbre_decision)
+if(!require("bit64")){
+  install.packages("bit64")
+  require("bit64")
+}
 ```
 
-## Modèle linéaire généralisé ?
-
-```{r}
-data_glm <- AMR_animale %>%
-  select(`valeur AMR`, population, annee, region, famille2) %>%
-  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
-
-fit <- glm(data = data_glm, `valeur AMR` ~ population)
-summary(fit)
-
-# HO : "GLM non significatif" -> beta1 = 0 vs H1 : "GLM significatif"
-qchisq(p=0.90,df=16)
-fit$null.deviance - fit$deviance
-
-data_glm <- AMR_humaine %>%
-  select(`valeur AMR`, population, annee, region) %>%
-  mutate(population = as.factor(population), annee = as.factor(annee), region = as.factor(region))
-
-fit <- glm(data = data_glm, `valeur AMR` ~ population)
-summary(fit)
-```
-Clairement ici, le GLM semble significatif car deviance nulle - deviance GLM >> quantile d'un khi2
-Bovin adulte est la modalité de référence.
