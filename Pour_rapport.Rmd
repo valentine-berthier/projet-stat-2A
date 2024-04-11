@@ -1009,7 +1009,7 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 ```{r}
 usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
 
-ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
+ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats et chiens", "Chevaux", "Lapins", "Porcs", "Volailles")),], aes(x = `valeur AMR`, y = `valeur AMU`))+
   geom_path(size = 0.8)+
   geom_point(aes(colour = path), size = 1)+
   theme_minimal()+
@@ -1021,7 +1021,7 @@ ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
        subtitle = "Pan-sensibilité par population animale et usage d'antibiotique",
        color = "Année du test de Pan-S")+
   scale_color_manual(values = c("between" = "black", "Start (2012)" = "green", "End (2021)" = "red"))+
-  facet_wrap(~population, scales = "free")
+  facet_wrap(~population, scales = "free_y")
 
 usage_humain <- usage_humain %>%
   group_by(annee, population) %>%
@@ -1042,7 +1042,7 @@ ggplot(data = usage_humain, aes(x = AMR_moyen, y = AMU_moyen))+
        subtitle = "Pan-sensibilité par population humaine et usage d'antibiotique",
        color = "Année du test de Pan-S")+
   scale_color_manual(values = c("between" = "black", "Start" = "green", "End" = "red"))+
-  facet_wrap(~population, scales = "free")
+  facet_wrap(~population, scales = "free_y")
 ```
 Il semble y avoir une tendance d'une résistance à la hausse pour une plus grande utilisation d'antibiotiques. Cependant, nous pouvons penser le contaire pour la population bovine. Les populations de porcs, volailles et lapins semblent avoir une tendance dans la consommation d'antibiotiques. Cette tendance s'observe aussi pour les valeurs de pan-sensibilité qui augmentent chez les porcs et les volailles. On peut faire les mêmes remarques chez les bovins, mais dans le sens inverse concernant la valeur de pan-sensibilité qui diminue au cours du temps.
 
@@ -1159,8 +1159,8 @@ for (pop in unique(usage_animal$population)){
 #  filter(annee != 2021 | region != "Guadeloupe") %>%
 #  filter(annee != 2019 | region != "Guadeloupe" | population == "ville")
 
-for (pop in unique(usage_humain_reg$population)){
-  usage_filtre <- usage_humain_reg[which(usage_humain_reg$population == pop),]
+for (pop in unique(usage_humain$population)){
+  usage_filtre <- usage_humain[which(usage_humain$population == pop),]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
   print(pop)
   print(summary(model_beta))
