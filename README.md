@@ -3,6 +3,8 @@
 
 
 Ce qu'il reste à faire : 
+- [ ] Vérifier tous les "Figure"
+- [ ] "a augmenté" Figure 9
 
 ## 4.1 PROPRIÉTÉS DE L'INDICATEUR
 
