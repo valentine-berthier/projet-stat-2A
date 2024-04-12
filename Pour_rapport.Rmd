@@ -141,7 +141,7 @@ load("donnees/reg_metropole.rdata")
 usage_prediction_animal <- read_excel("donnees/AMU2022.xlsx", sheet = "données animales nationales")
 colnames(usage_prediction_animal) <- c("population", "annee", "valeur AMU", "valeur AMR", "effectif AMR")
 usage_prediction_humain <- read_excel("donnees/AMU2022.xlsx", sheet = "données humaines régionales")
-colnames(usage_prediction_humain) <- c("population", "annee", "region", "valeur AMU")
+
 # Si le modèle contient le paramètre region, alors il faut supprimer les données pour lesquelles on ne peut pas faire de prédiction (Guyane, Mayotte et Ile-de-France, et La Réunion pour les autres populations qu'ES)
 #usage_prediction_humain <- usage_prediction_humain %>%
 #  filter(region != "Guyane") %>%
@@ -1201,18 +1201,33 @@ for (pop in unique(usage_animal$population)){
   print(pop)
   print(predictions)
 }
+
+mes_predictions_humains <- as.data.frame(NULL)
 for (pop in unique(usage_humain$population)){
   usage_filtre <- usage_humain[which(usage_humain$population == pop),]
   usage_prediction_filtre <- usage_prediction_humain[which(usage_prediction_humain$population == pop), c(2, 4, 3)]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
   print(pop)
-  table_prediction <- cbind(unique(usage_prediction_filtre$region), predictions)
+  table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100)
   print(table_prediction)
+  mes_predictions_humains <- rbind(mes_predictions_humains, table_prediction)
 }
+mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
+colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur")
+mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
 ```
 
 Une estimation par région pour les populations humains.
+
+Pour étudier l'efficacité de cette prédiction, nous pouvons utiliser l'écart moyen des valeurs estimées avec les valeurs attendues.
+
+```{r}
+ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
+  geom_line()+
+  geom_point()+
+  geom_abline(color = "darkgreen", size = 1)
+```
 
 ### Lien à d'autres variables
 
