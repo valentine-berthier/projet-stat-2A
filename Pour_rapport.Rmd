@@ -377,7 +377,7 @@ cat("Statistique de test z:", z_stat, "\n")
 cat("P-valeur:", p_value, "\n")
 
 proportion_obs <- (100 - mean(table$taux, na.rm = TRUE))/100
-proportion_nulle <- 15/100
+proportion_nulle <- 20/100
 z_stat <- (proportion_obs - proportion_nulle) / sqrt(proportion_nulle * (1 - proportion_nulle) / nrow(table_join))
 p_value <- pnorm(z_stat)
 print("humains")
