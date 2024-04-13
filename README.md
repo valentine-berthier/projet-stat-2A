@@ -3,6 +3,8 @@
 
 
 Ce qu'il reste à faire : 
+- [ ] Vérifier tous les "Figure"
+- [ ] "a augmenté" Figure 9
 
 ## 4.1 PROPRIÉTÉS DE L'INDICATEUR
 
@@ -10,7 +12,7 @@ Ce qu'il reste à faire :
 - Variabilité par région :
   - [ ] *vérifier que Val a pas écrit n'importe quoi*
   - [ ] Ajouter Tests de Levene (+Analyses)
-  - [ ] Charger Cartes (FLO) (+Analyses)
+  - [x] Charger Cartes (+Analyses)
 - Analyse de la variance : 
   - [ ] *vérifier que Val a pas écrit n'importe quoi*
   - [ ] Ajouter Test ANOVA (Explications, sorties et Analyses)
