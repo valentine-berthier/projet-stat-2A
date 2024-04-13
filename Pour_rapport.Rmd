@@ -979,7 +979,7 @@ pvaleurs_ab<-c(signif(resultats_tests$`volaille-abattoir`$p.value,2),
             signif(resultats_tests$`veau-abattoir`$p.value,2))
 pvaleurs_anim<-c(signif(resultats_tests$veau$p.value,2),
                  signif(resultats_tests$`Poule-poulet`$p.value,2),
-                 signif(resultats_tests$Porc$p.value,2),
+                 signif(resultats_tests$Porc$p.valueue,2),
                  signif(resultats_tests$Lapin$p.value,2),
                  signif(resultats_tests$Dinde$p.value,2),
                  signif(resultats_tests$Chien$p.value,2),
