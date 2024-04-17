@@ -99,6 +99,8 @@ ModeleHUM2<-ModeleHUM2%>%
 
 ### Données d'usage
 
+https://rdrr.io/cran/betareg/man/predict.betareg.html
+
 ```{r}
 usage <- read_excel("donnees/D_usage.xlsx")
 
@@ -1214,10 +1216,11 @@ for (pop in unique(usage_animal$population)){
   usage_filtre <- usage_animal[which(usage_animal$population == pop),]
   usage_prediction_filtre <- usage_prediction_animal[which(usage_prediction_animal$population == pop), c(2, 3)]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
-  predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
+  predictions <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction")
+  predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
   print(pop)
   print(predictions)
-  table_prediction <- cbind(pop, predictions * 100)
+  table_prediction <- cbind(pop, predictions * 100, predictions_IC)
   mes_predictions_animaux <- rbind(mes_predictions_animaux, table_prediction)
 }
 
@@ -1227,8 +1230,9 @@ for (pop in unique(usage_humain$population)){
   usage_prediction_filtre <- usage_prediction_humain[which(usage_prediction_humain$population == pop), c(2, 4, 3)]
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
+  predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
   print(pop)
-  table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100)
+  table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100, predictions_IC)
   print(table_prediction)
   mes_predictions_humains <- rbind(mes_predictions_humains, table_prediction)
 }
@@ -1240,11 +1244,11 @@ Pour étudier l'efficacité de cette prédiction, nous pouvons utiliser l'écart
 
 ```{r}
 mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
-colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur")
+colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur", "borne_inf", "borne_sup")
 mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
 
 mes_predictions_animaux <- cbind(mes_predictions_animaux, usage_prediction_animal$`valeur AMR`)
-colnames(mes_predictions_animaux) <- c("population", "estimation", "vraie valeur")
+colnames(mes_predictions_animaux) <- c("population", "estimation", "vraie valeur", "borne_inf", "borne_sup")
 mes_predictions_animaux$estimation <- as.numeric(mes_predictions_animaux$estimation)
 
 ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
