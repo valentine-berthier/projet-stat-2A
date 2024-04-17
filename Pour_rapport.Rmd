@@ -1229,9 +1229,18 @@ for (pop in unique(usage_humain$population)){
   print(table_prediction)
   mes_predictions_humains <- rbind(mes_predictions_humains, table_prediction)
 }
-mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
-colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur")
-mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
+
+mes_predictions_animaux <- as.data.frame(NULL)
+for (pop in unique(usage_animal$population)){
+  usage_filtre <- usage_animal[which(usage_animal$population == pop),]
+  usage_prediction_filtre <- usage_prediction_animal[which(usage_prediction_animal$population == pop), c(2, 4, 3)]
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
+  predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
+  print(pop)
+  table_prediction <- cbind(pop, predictions * 100)
+  print(table_prediction)
+  mes_predictions_animaux <- rbind(mes_predictions_animaux, table_prediction)
+}
 ```
 
 Une estimation par région pour les populations humains.
@@ -1239,10 +1248,28 @@ Une estimation par région pour les populations humains.
 Pour étudier l'efficacité de cette prédiction, nous pouvons utiliser l'écart moyen des valeurs estimées avec les valeurs attendues.
 
 ```{r}
-ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
+mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
+colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur")
+mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
+
+mes_predictions_animaux <- cbind(mes_predictions_animaux, mes_predictions_animaux$`valeur AMR`)
+colnames(mes_predictions_animaux) <- c("population", "estimation", "vraie valeur")
+mes_predictions_animaux$estimation <- as.numeric(mes_predictions_animaux$estimation)
+
+ggplot(data = mes_predictions_humains[which(mes_predictions_humains$population == "ES"),], aes(x = estimation, y = `vraie valeur`))+
   geom_line()+
   geom_point()+
   geom_abline(color = "darkgreen", size = 1)
+
+install.packages("Metrics")
+library("Metrics")
+
+# Racine de l'erreur quadratique moyenne
+for (pop in unique(mes_predictions_humains$population)){
+  print(pop)
+  print(rmse(mes_predictions_humains$`vraie valeur`[which(mes_predictions_humains$population == pop)], mes_predictions_humains$estimation[which(mes_predictions_humains$population == pop)]))
+}
+
 ```
 
 ### Lien à d'autres variables
