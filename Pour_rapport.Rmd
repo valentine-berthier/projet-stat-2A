@@ -525,7 +525,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Guadeloupe",
-       caption = str_glue(paste("Cohorte : La population en ville en France métropolitaine et Outres-Mer dont les données sont disponibles.\nLecture : En 2021, la population en ville a un taux de pan-sensibilité compris entre ",min,"et",max,".")))+
+       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 carteAMR1_Mart<-R1_Mart%>%
@@ -576,8 +576,22 @@ if(!require("patchwork")){
 }
 
 carteAMR1 / (carteAMR1_Mart | carteAMR1_Guad)
-               
+     
 
+sizes <- c(4, 1, 1)
+
+# Créer la mise en page en spécifiant les proportions
+layout <- plot_layout(
+  nrow = 3,
+  heights = c(sizes, 0.1),
+  widths = c(1)  # Tous les graphiques auront la même largeur
+)
+
+# Assembler les graphiques avec la mise en page
+final_plot <- carteAMR1 / (carteAMR1_Mart + plot_spacer() + carteAMR1_Guad) / layout
+
+# Afficher le graphique final
+final_plot          
 ```
 
 ```{r}
@@ -625,7 +639,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population bovine en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Cohorte : La population bovine en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La Normandie présente le taux de pan-sensibilité le plus élevé chez les bovins pour l'année 2021 (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
+       caption = str_glue(paste("Données : les bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits = bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
@@ -888,12 +902,13 @@ Spageti plot et tests de tendance -> pour montrer que des tendances identifiable
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abattoir"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Hausse générale de la sensibilité des populations en abattoir",
+  labs(title = "Hausse générale de la sensibilité des populations issues d'abattoir",
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Cohorte : Les populations animales en abattoir\nLecture : Sur les 3 dernières années, de 2019 à 2021, les bactéries étudiées sur les veaux\nvoués à l'abattoir ont démontré plus de résistance aux antibiotiques que les années précédentes.")) +
-  theme_minimal()
+       caption = str_glue("Données : espèces animales issues d'abattoir\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
+  theme_minimal()+
+  scale_color_discrete(labels = c("Dinde", "Porc", "Poulet", "Veau", "Volaille"))
 
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
@@ -912,8 +927,9 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Cohorte : Les populations humaines\nLecture : Chez toutes les populations humaines, la valeur de la pan-sensibilité à\naugmenter de 2012 à 2021. Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
-  theme_minimal()
+       caption = str_glue("Données : populations humaines\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
+  theme_minimal()+
+  scale_color_discrete(labels = c("EHPAD", "ES", "ES-hemoculture", "Ville"))
 ```
 
 #### 1 : Tests de tendance
@@ -1013,7 +1029,7 @@ ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats 
   geom_path(size = 0.8)+
   geom_point(aes(colour = path), size = 1)+
   theme_minimal()+
-  theme(legend.position = "top")+
+  theme(legend.position = "bottom")+
   labs(x = "Pan-S",
        y = "Usage d'antibiotiques",
        title = "L'usage d'antiotique semble avoir un effet sur la pan-sensibilité des animaux",
@@ -1034,7 +1050,7 @@ ggplot(data = usage_humain, aes(x = AMR_moyen, y = AMU_moyen))+
   geom_path(size = 0.8)+
   geom_point(aes(colour = path), size = 1)+
   theme_minimal()+
-  theme(legend.position = "top")+
+  theme(legend.position = "bottom")+
   labs(x = "Pan-S",
        y = "Usage d'antibiotiques",
        title = "L'usage d'antiotique a un effet sur la pan-sensibilité en EHPAD et en ville",
