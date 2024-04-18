@@ -164,7 +164,7 @@ ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median),
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
-       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les plus résistants aux antibiotiques.",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux \n dont la population bactérienne est la plus résistante.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
