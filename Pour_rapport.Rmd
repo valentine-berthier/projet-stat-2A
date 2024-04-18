@@ -738,9 +738,9 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
+  labs(title = "Pan-sensibilité des populations chiens et chats en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Cohorte : La population des bovins en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de pan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"), et donc la résistance la plus élevée, pour l'année 2021.")))+
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : En Auverge-Rhône-Alpes le taux de pan-sensibilité des chiens et chats est le plus bas :", min(R1$`valeur AMR`,na.rm=TRUE), "% en 2021.")))+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
