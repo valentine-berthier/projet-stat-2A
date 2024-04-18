@@ -1156,6 +1156,10 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
+hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S")
+title(sub = "Note : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
+lines(density(rbeta(100, 31.471, 40.324)), col = 'darkgreen', lwd = 3)
+
 # On fait la régression bêta
 
 # Charger le package nécessaire pour les modèles de régression bêta
@@ -1179,7 +1183,7 @@ for (pop in unique(usage_animal$population)){
 
 for (pop in unique(usage_humain$population)){
   usage_filtre <- usage_humain[which(usage_humain$population == pop),]
-  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
+  model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`), weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit") # On prend le log car on a des données d'usage très dispersées (entre 1 et 300), et pas plus petites que 1, sinon le log devient négatif. Si on met région dans la régression plutôt qu'année ça donne des estimations pas significatives pour les coefficients de la valeur d'usage. On privilégie donc année qui donne des choses significatives.
   print(pop)
   print(summary(model_beta))
   print(AIC(model_beta))
@@ -1220,7 +1224,7 @@ for (pop in unique(usage_animal$population)){
   predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
   print(pop)
   print(predictions)
-  table_prediction <- cbind(pop, predictions * 100, predictions_IC)
+  table_prediction <- cbind(pop, predictions * 100, predictions_IC * 100)
   mes_predictions_animaux <- rbind(mes_predictions_animaux, table_prediction)
 }
 
@@ -1232,7 +1236,7 @@ for (pop in unique(usage_humain$population)){
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
   predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
   print(pop)
-  table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100, predictions_IC)
+  table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100, predictions_IC * 100)
   print(table_prediction)
   mes_predictions_humains <- rbind(mes_predictions_humains, table_prediction)
 }
@@ -1244,11 +1248,11 @@ Pour étudier l'efficacité de cette prédiction, nous pouvons utiliser l'écart
 
 ```{r}
 mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
-colnames(mes_predictions_humains) <- c("population", "region", "estimation", "vraie valeur", "borne_inf", "borne_sup")
+colnames(mes_predictions_humains) <- c("population", "region", "estimation", "borne_inf", "borne_sup", "vraie valeur")
 mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
 
 mes_predictions_animaux <- cbind(mes_predictions_animaux, usage_prediction_animal$`valeur AMR`)
-colnames(mes_predictions_animaux) <- c("population", "estimation", "vraie valeur", "borne_inf", "borne_sup")
+colnames(mes_predictions_animaux) <- c("population", "estimation", "borne_inf", "borne_sup", "vraie valeur")
 mes_predictions_animaux$estimation <- as.numeric(mes_predictions_animaux$estimation)
 
 ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
@@ -1279,7 +1283,6 @@ for (pop in unique(mes_predictions_animaux$population)){
   print(pop)
   print(rmse(mes_predictions_animaux$`vraie valeur`[which(mes_predictions_animaux$population == pop)], mes_predictions_animaux$estimation[which(mes_predictions_animaux$population == pop)]))
 }
-
 ```
 
 ### Lien à d'autres variables
