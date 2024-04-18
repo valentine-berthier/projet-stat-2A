@@ -291,10 +291,10 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2% des animaux étudiés n’ont pas de profil de pan-sensibilité calculable.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
-  annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
+  annotate("text", x = 1.5, y = 18.5, label = "Moyenne = 13.2%", colour = "darkgreen", size = 3.3)
 ```
 
 
@@ -350,7 +350,7 @@ ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
        caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = population)+
-  annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
+  annotate("text", x = 0.7, y = 4, label = paste0("Moyenne=", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.2)
 ```
 
 #### 3 : Test de proportion
