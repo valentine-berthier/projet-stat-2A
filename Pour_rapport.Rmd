@@ -1222,8 +1222,6 @@ for (pop in unique(usage_animal$population)){
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ `valeur AMU`, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction")
   predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
-  print(pop)
-  print(predictions)
   table_prediction <- cbind(pop, predictions * 100, predictions_IC * 100)
   mes_predictions_animaux <- rbind(mes_predictions_animaux, table_prediction)
 }
@@ -1235,9 +1233,7 @@ for (pop in unique(usage_humain$population)){
   model_beta <- betareg(data = usage_filtre, `valeur AMR` ~ log(`valeur AMU`) + annee, weights = nrow(usage_filtre) * `effectif AMR` / sum(`effectif AMR`), link = "logit")
   predictions <- predict(model_beta, newdata = usage_prediction_filtre, se.fit=TRUE, interval = "prediction", level = 0.99)
   predictions_IC <- predict(model_beta, newdata = usage_prediction_filtre, interval = "prediction", type = "quantile", at = c(0.05, 0.95))
-  print(pop)
   table_prediction <- cbind(pop, unique(usage_prediction_filtre$region), predictions * 100, predictions_IC * 100)
-  print(table_prediction)
   mes_predictions_humains <- rbind(mes_predictions_humains, table_prediction)
 }
 ```
@@ -1247,29 +1243,51 @@ Une estimation par région pour les populations humains.
 Pour étudier l'efficacité de cette prédiction, nous pouvons utiliser l'écart moyen des valeurs estimées avec les valeurs attendues.
 
 ```{r}
+mes_predictions_humains <- mes_predictions_humains %>%
+  arrange(pop, V2)
+
 mes_predictions_humains <- cbind(mes_predictions_humains, usage_prediction_humain$`valeur AMR`)
 colnames(mes_predictions_humains) <- c("population", "region", "estimation", "borne_inf", "borne_sup", "vraie valeur")
+
 mes_predictions_humains$estimation <- as.numeric(mes_predictions_humains$estimation)
+mes_predictions_humains$borne_inf <- as.numeric(mes_predictions_humains$borne_inf)
+mes_predictions_humains$borne_sup <- as.numeric(mes_predictions_humains$borne_sup)
+
+mes_predictions_animaux <- mes_predictions_animaux %>%
+  arrange(pop)
 
 mes_predictions_animaux <- cbind(mes_predictions_animaux, usage_prediction_animal$`valeur AMR`)
 colnames(mes_predictions_animaux) <- c("population", "estimation", "borne_inf", "borne_sup", "vraie valeur")
 mes_predictions_animaux$estimation <- as.numeric(mes_predictions_animaux$estimation)
+mes_predictions_animaux$borne_inf <- as.numeric(mes_predictions_animaux$borne_inf)
+mes_predictions_animaux$borne_sup <- as.numeric(mes_predictions_animaux$borne_sup)
+```
 
+```{r}
 ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
-  geom_line()+
+  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "darkgreen", alpha = 0.1) +
   geom_point()+
-  geom_abline(color = "darkgreen", size = 1)+
-  scale_y_continuous(limits = c(0, 100))+
-  scale_x_continuous(limits = c(0, 100))
+  geom_abline(color = "darkgreen")+
+  labs(title = "Les prédictions des pan-S humaines pour 2022 et l'intervalle de confiance associé",
+       subtitle = "Intervalle de confiance calculé à 95%",
+       caption = "Données : Pan-S des humains en 2022 par région.\n Note de lecture : La majorité des estimations se trouvent proches des vraies valeurs.",
+       x = "Pan-S estimée",
+       y = "Pan-S réelle")+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"))+
+  scale_x_continuous(labels=scales::number_format(suffix=" %"))
 
 ggplot(data = mes_predictions_animaux, aes(x = estimation, y = `vraie valeur`))+
-  geom_line()+
+  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "darkgreen", alpha = 0.1) +
   geom_point()+
-  geom_abline(color = "darkgreen", size = 1)+
-  scale_y_continuous(limits = c(0, 100))+
-  scale_x_continuous(limits = c(0, 100))
+  geom_abline(color = "darkgreen")+
+  labs(title = "Les prédictions des pan-S animales pour 2022 et l'intervalle de confiance associé",
+       subtitle = "Intervalle de confiance calculé à 95%",
+       caption = "Données : Pan-S des animaux en 2022 en France entière.\n Note de lecture : Seules 2 observations se trouvent dans l'intervalle de confiance des prédictions.",
+       x = "Pan-S estimée",
+       y = "Pan-S réelle")+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"))+
+  scale_x_continuous(labels=scales::number_format(suffix=" %"))
 
-install.packages("Metrics")
 library("Metrics")
 
 # Racine de l'erreur quadratique moyenne
