@@ -164,7 +164,7 @@ ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median),
   geom_boxplot()+
   labs(title = "Des résultats dispersés pour toutes les populations",
        subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
-       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les plus résistants aux antibiotiques.",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux \n dont la population bactérienne est la plus résistante.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
@@ -291,10 +291,10 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2% des animaux étudiés n’ont pas de profil de pan-sensibilité calculable.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
-  annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
+  annotate("text", x = 1.5, y = 18.5, label = "Moyenne = 13.2%", colour = "darkgreen", size = 3.3)
 ```
 
 
@@ -350,7 +350,7 @@ ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
        caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = population)+
-  annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
+  annotate("text", x = 0.7, y = 4, label = paste0("Moyenne=", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.2)
 ```
 
 #### 3 : Test de proportion
@@ -997,7 +997,7 @@ pvaleurs_ab<-c(signif(resultats_tests$`volaille-abattoir`$p.value,2),
             signif(resultats_tests$`veau-abattoir`$p.value,2))
 pvaleurs_anim<-c(signif(resultats_tests$veau$p.value,2),
                  signif(resultats_tests$`Poule-poulet`$p.value,2),
-                 signif(resultats_tests$Porc$p.value,2),
+                 signif(resultats_tests$Porc$p.valueue,2),
                  signif(resultats_tests$Lapin$p.value,2),
                  signif(resultats_tests$Dinde$p.value,2),
                  signif(resultats_tests$Chien$p.value,2),
