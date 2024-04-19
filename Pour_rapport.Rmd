@@ -28,6 +28,9 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 ### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
+AMR <- AMR %>%
+  filter(population != "Caprin") %>%
+  filter(population != "Ovin")
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
@@ -158,13 +161,13 @@ usage_prediction_humain <- read_excel("donnees/AMU2022.xlsx", sheet = "données 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
 ```{r,echo=FALSE}
-label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Caprin", "Veau", "EHPAD", "ES-hemoculture", "Ovin", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
+label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Veau", "EHPAD", "ES-hemoculture", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
 
 ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median), fill = famille2))+
   geom_boxplot()+
-  labs(title = "Des résultats dispersés pour toutes les populations",
-       subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
-       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux \n dont la population bactérienne est la plus résistante.",
+  labs(title = "Boxplot pour l'étude des dispersions des valeurs Pan-S",
+       subtitle = "Comparaison des Pan-S entre animaux et humains",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année - Anses\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux dont la \n population bactérienne est la plus résistante.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
@@ -199,6 +202,8 @@ AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
 arrange(desc(`nombre de régions`))
+
+
 ```
 
 
@@ -435,6 +440,11 @@ Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous 
 + test d'égalité des moyennes (student ?)
 L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
 
+```{r}
+
+```
+
+
 ```{r,echo=FALSE}
 AMR_animale$annee <- as.factor(AMR_animale$annee)
 AMR_humaine$annee <- as.factor(AMR_humaine$annee)
@@ -536,7 +546,7 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population ville en France en 2021",
+  labs(title = "Pan-sensibilité de la population en ville en France en 2021",
        fill = "Pan-sensibilité")+
   scale_fill_gradient(name = "taux de pan-sensibilité",limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
@@ -548,7 +558,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Guadeloupe",
-       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
+       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles - Anses.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 carteAMR1_Mart<-R1_Mart%>%
@@ -662,7 +672,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population bovine en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Données : les bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
+       caption = str_glue(paste("Données : les bovins en France métropolitaine \n(des régions (en gris et Outre-mer) sont indisponibles) - Anses.\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits = bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
@@ -759,9 +769,12 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
+  labs(title = "Pan-sensibilité des populations chiens et chats en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Cohorte : La population des bovins en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de pan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"), et donc la résistance la plus élevée, pour l'année 2021.")))+
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine\n(les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles) - Anses\nNote de lecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de\npan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"),et donc la résistance la plus élevée, pour l'année 2021.")))+
+
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : En Auverge-Rhône-Alpes le taux de pan-sensibilité des chiens et chats est le plus bas :", min(R1$`valeur AMR`,na.rm=TRUE), "% en 2021.")))+
+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
@@ -942,7 +955,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abat
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : espèces animales issues d'abattoir\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
+       caption = str_glue("Données : espèces animales issues d'abattoir - Anses\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("Dinde", "Porc", "Poulet", "Veau", "Volaille"))
 
@@ -953,7 +966,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),],
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Cohorte : Toutes les populations animales étudiées\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
+       caption = str_glue("Cohorte : Toutes les populations animales étudiées - Anses\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -963,7 +976,7 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : populations humaines\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
+       caption = str_glue("Données : populations humaines - Anses\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("EHPAD", "ES", "ES-hemoculture", "Ville"))
 ```
@@ -1304,7 +1317,7 @@ ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
   geom_abline(color = "darkgreen")+
   labs(title = "Les prédictions des pan-S humaines pour 2022 et l'intervalle de confiance associé",
        subtitle = "Intervalle de confiance calculé à 95%",
-       caption = "Données : Pan-S des humains en 2022 par région.\n Note de lecture : La majorité des estimations se trouvent proches des vraies valeurs.",
+       caption = "Données : Pan-S des humains en 2022 par région - Anses\n Note de lecture : La majorité des estimations se trouvent proches des vraies valeurs.",
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
@@ -1316,7 +1329,7 @@ ggplot(data = mes_predictions_animaux, aes(x = estimation, y = `vraie valeur`))+
   geom_abline(color = "darkgreen")+
   labs(title = "Les prédictions des pan-S animales pour 2022 et l'intervalle de confiance associé",
        subtitle = "Intervalle de confiance calculé à 95%",
-       caption = "Données : Pan-S des animaux en 2022 en France entière.\n Note de lecture : Seules 2 observations se trouvent dans l'intervalle de confiance des prédictions.",
+       caption = "Données : Pan-S des animaux en 2022 en France entière - Anses\n Note de lecture : Seules 2 observations se trouvent dans l'intervalle de confiance des prédictions.",
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
