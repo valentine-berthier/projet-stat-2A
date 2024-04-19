@@ -28,6 +28,9 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 ### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
+AMR <- AMR %>%
+  filter(population != "Caprin") %>%
+  filter(population != "Ovin")
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
@@ -158,13 +161,13 @@ usage_prediction_humain <- read_excel("donnees/AMU2022.xlsx", sheet = "données 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
 ```{r,echo=FALSE}
-label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Caprin", "Veau", "EHPAD", "ES-hemoculture", "Ovin", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
+label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Veau", "EHPAD", "ES-hemoculture", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
 
 ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median), fill = famille2))+
   geom_boxplot()+
-  labs(title = "Des résultats dispersés pour toutes les populations",
-       subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
-       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux \n dont la population bactérienne est la plus résistante.",
+  labs(title = "Boxplot pour l'étude des dispersions des valeurs Pan-S",
+       subtitle = "Comparaison des Pan-S entre animaux et humains",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année - Anses\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux dont la \n population bactérienne est la plus résistante.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
@@ -199,6 +202,8 @@ AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
 arrange(desc(`nombre de régions`))
+
+
 ```
 
 
@@ -413,6 +418,11 @@ Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous 
 #### 2 : Variabilité annuelle
 + test d'égalité des moyennes (student ?)
 L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
+
+```{r}
+
+```
+
 
 ```{r,echo=FALSE}
 AMR_animale$annee <- as.factor(AMR_animale$annee)
@@ -738,9 +748,12 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
+  labs(title = "Pan-sensibilité des populations chiens et chats en France en 2021",
        fill = "Pan-sensibilité",
        caption = str_glue(paste("Données : La population des bovins en France métropolitaine\n(les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles) - Anses\nNote de lecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de\npan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"),et donc la résistance la plus élevée, pour l'année 2021.")))+
+
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : En Auverge-Rhône-Alpes le taux de pan-sensibilité des chiens et chats est le plus bas :", min(R1$`valeur AMR`,na.rm=TRUE), "% en 2021.")))+
+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
