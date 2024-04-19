@@ -515,7 +515,7 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population ville en France en 2021",
+  labs(title = "Pan-sensibilité de la population en ville en France en 2021",
        fill = "Pan-sensibilité")+
   scale_fill_gradient(name = "taux de pan-sensibilité",limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
@@ -527,7 +527,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Guadeloupe",
-       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
+       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles - Anses.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 carteAMR1_Mart<-R1_Mart%>%
@@ -641,7 +641,7 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population bovine en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Données : les bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
+       caption = str_glue(paste("Données : les bovins en France métropolitaine \n(des régions (en gris et Outre-mer) sont indisponibles) - Anses.\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
   scale_fill_gradient(name = "taux de pan-sensibilité", limits = bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
