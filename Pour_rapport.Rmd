@@ -870,7 +870,23 @@ for (i in 1:length(anova_results)) {
 }
 
 anova_test(`valeur AMR` ~ population + region + annee, data = AMR_regionale)
+
 ```
+
+```{r}
+model_annee <- lm(`valeur AMR` ~ annee + region, data = AMR_regionale)
+# Génération du qqplot avec les résidus du modèle
+qqplot <- ggpubr::ggqqplot(residuals(model_annee))
+
+# Ajout d'un titre et d'une note de lecture
+qqplot +
+  ggtitle("Diagramme Quantile-Quantile") +  # Ajout du titre
+  xlab("Quantiles théoriques") +  # Ajout de l'axe x
+  ylab("Quantiles empiriques") +  # Ajout de l'axe y
+  labs(caption = str_glue("Données : populations régionales - Anses\nNote de lecture : La bissectrice représente les quantiles de la loi normale.")) +
+  theme_minimal()  # Choix d'un thème pour améliorer l'esthétique du graphique
+```
+
 La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
 
 #### Animal
@@ -1038,6 +1054,7 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 #### 1 : Visualisation
 
 ```{r}
+set.seed(123)
 usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
 
 ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats et chiens", "Chevaux", "Lapins", "Porcs", "Volailles")),], aes(x = `valeur AMR`, y = `valeur AMU`))+
@@ -1099,6 +1116,7 @@ L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les popula
 Pour bien comprendre que nous devons utiliser une régression bêta, se pencher sur les résults d'une régression logit généralisée et comparer les déviances des deux modèles.
 
 ```{r}
+
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
   mutate(`valeur AMR` = `valeur AMR`*0.01)
@@ -1169,8 +1187,8 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
-hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S")
-title(sub = "Note : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
+hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S",ylab="Densité")
+title(sub = "\nDonnées : les populations en EHPAD - Anses\nIndication : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
 lines(density(rbeta(100, 31.471, 40.324)), col = 'darkgreen', lwd = 3)
 
 # On fait la régression bêta
@@ -1414,4 +1432,26 @@ table5<-table4%>%
 
 ```
 
+
+
+
+```{r}
+UA<-usage_animal%>%
+  select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+UA<-usage_animal[c(1,24,32,45,48),]%>%
+    select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+
+usage<-rbind(usage_humain[1,],usage_humain[88,],usage_humain[124,],usage_humain[180,])
+usage<-usage%>%
+  mutate(famille="humaine")%>%
+    select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+
+rbind(UA,usage)
+
+xtable(rbind(UA,usage))
+names(usage)
+
+names(UA)
+
+```
 
