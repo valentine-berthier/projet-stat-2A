@@ -404,6 +404,27 @@ représenter des boxplots par population des estimations régionales annuelles (
 Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
 Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
 
+#### 0 : descripteurs usuels de variabilité (médiane, écart inter-quartiles, variance, écart-type,coefficient de variation)
+```{r}
+# Calculer les descripteurs de variabilité pour chaque groupe
+resultats <- AMR %>%
+  group_by(region) %>%  # Grouper les données par la variable population
+  summarise(
+    mediane = median(`valeur AMR`),  # Calcul de la médiane
+    q1 = quantile(`valeur AMR`, 0.25),  # Calcul du premier quartile
+    q3 = quantile(`valeur AMR`, 0.75),  # Calcul du troisième quartile
+    iqr = q3 - q1,  # Calcul de l'écart inter-quartiles (IQR)
+    variance = var(`valeur AMR`),  # Calcul de la variance
+    ecart_type = sd(`valeur AMR`),  # Calcul de l'écart-type
+    coefficient_variation = (ecart_type / mean(`valeur AMR`)) * 100  # Calcul du coefficient de variation
+  )
+
+# Afficher les résultats
+print(resultats)
+
+```
+
+
 #### ok 1 : Variabilité par population
 
 La variabilité entre les populations a déjà pu être observée dans l'analyse descriptive, concentrons-nous sur l'étude de l'homogénéité des variances et des moyennes par groupe.
@@ -835,6 +856,19 @@ model_reg <- lm(`valeur AMR` ~ region, data = data_anova)
 ggpubr::ggqqplot(residuals(model_reg))
 model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
 ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
+
+model_annee <- lm(`valeur AMR` ~ annee + region, data = AMR_regionale)
+# Génération du qqplot avec les résidus du modèle
+qqplot <- ggpubr::ggqqplot(residuals(model_annee))
+
+# Ajout d'un titre et d'une note de lecture
+qqplot +
+  ggtitle("Diagramme Quantile-Quantile") +  # Ajout du titre
+  xlab("Quantiles théoriques") +  # Ajout de l'axe x
+  ylab("Quantiles empiriques") +  # Ajout de l'axe y
+  labs(caption = str_glue("Données : populations régionales\nNote de lecture : La bissectrice représente les quantiles de la loi normale.")) +
+  theme_minimal()  # Choix d'un thème pour améliorer l'esthétique du graphique
+
 
 ## 3 - Hypothèse d’homogénéité des variances
 # Hypothèse vérifiée pour la variable annee (vu plus tôt) et pour la variable region (lorsqu'on prend chaque population indépendamment). Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes --> chaque population indépendante. 
