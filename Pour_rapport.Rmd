@@ -28,9 +28,6 @@ Essayons de mettre en forme ce fichier avec chaque analyse que nous trouvons vra
 ### Données de pan-sensbilité
 ```{r,echo=FALSE, include=FALSE}
 AMR <- read_excel("donnees/donnees_AMR.xlsx")
-AMR <- AMR %>%
-  filter(population != "Caprin") %>%
-  filter(population != "Ovin")
 
 # On renomme "bovin-abattoir" en "veau-abattoir"
 AMR$population <- ifelse(AMR$population == "bovin-abattoir", "veau-abattoir", AMR$population)
@@ -161,13 +158,13 @@ usage_prediction_humain <- read_excel("donnees/AMU2022.xlsx", sheet = "données 
 Nous recherchons une liaison entre une variable qualitative (la population) et une variable quantitative (la valeur AMR). Pour cela, un boxplot permet d'avoir un premier aperçu des ressemblances.
 
 ```{r,echo=FALSE}
-label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Veau", "EHPAD", "ES-hemoculture", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
+label <- c("Veau", "Lapin", "Poulet", "Porc", "Dinde", "Volaille", "Caprin", "Veau", "EHPAD", "ES-hemoculture", "Ovin", "ES", "Porc", "Dinde", "Ville", "Cheval", "Volaille", "Chien", "Poulet", "Chat", "Bovin")
 
 ggplot(AMR, aes(x = `valeur AMR`, y = reorder(population, `valeur AMR`, median), fill = famille2))+
   geom_boxplot()+
-  labs(title = "Boxplot pour l'étude des dispersions des valeurs Pan-S",
-       subtitle = "Comparaison des Pan-S entre animaux et humains",
-       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année - Anses\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les animaux dont la \n population bactérienne est la plus résistante.",
+  labs(title = "Des résultats dispersés pour toutes les populations",
+       subtitle = "Étude des dispersions et comparaison des valeurs Pan-S entre animaux et humains",
+       caption = "Données: Une observation correspond à une région (ou la donnée nationale) et une année.\n Note de lecture : Les veaux ont la pan-sensibilité la plus basse, ie. ce sont les plus résistants aux antibiotiques.",
        y = NULL,
        x = "Valeur Pan-S",
        fill = "Famille")+
@@ -202,8 +199,6 @@ AMR %>%
   group_by(population) %>%
   summarise(`nombre de régions` = n_distinct(region)-1)%>%
 arrange(desc(`nombre de régions`))
-
-
 ```
 
 
@@ -234,20 +229,18 @@ AMR_perte_regionale_humain <- AMR_perte_regionale %>%
 
 rm(AMR_perte_regionale, effectif_regional, effectif_national)
   
-label <- c("Chien", "Veau", "Chat", "Dinde", "Bovin", "Cheval", "Volaille-abattoir", "Dinde-abattoir", "Lapin", "Porc", "Porc-abattoir", "Poulet-abattoir", "Veau-abattoir")
+label <- c("Chien", "Veau", "Chat", "Bovin", "Cheval", "Volaille-abattoir", "Dinde-abattoir", "Lapin", "Porc", "Porc-abattoir", "Poulet-abattoir", "Veau-abattoir")
 
 ggplot(AMR_perte_regionale_animal, aes(x = reorder(population, perte), y = perte)) +
   geom_boxplot() +
   geom_hline(yintercept = mean(AMR_perte_regionale_animal$perte), color = "darkgreen", size = 0.8, linetype = "dashed") +
-  labs(title = "Boxplot de la perte d'effectif lors du passage de l'échelle nationale à régionale",
+  labs(title = "Perte d'effectif lors du passage de l'échelle nationale à régionale",
        x = NULL,
-       subtitle = expression(paste("Perte calculée à partir de cette formule : (1 - ", Sigma, " effectif régional / effectif national) * 100")),
        y = "Taux d'effectif perdu",
-       caption = str_glue("Données : Pan-S des populations animales - Anses\nNote de lecture : Par année, moins de 20% de l'information est perdue en analysant les Pan-S des chiens l'échelle régionale."))+
+       caption = str_glue("Données : Populations animales\nNote de lecture : Entre 2012 et 2021, la moitié des années ont fait face à une perte régionale d'au moins 50% chez les porcs."))+
   scale_y_continuous(labels = scales::label_percent(scale = 100))+
-  theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  annotate("text", x = 12, y = 0.19, label = "Moyenne = 22.75%", colour = "darkgreen", size = 3.3)+
+  annotate("text", x = 11, y = 0.18, label = "Mean = 23.54%", colour = "darkgreen", size = 3.3)+
   scale_x_discrete(labels = label)
 
 ggplot(AMR_perte_regionale_humain, aes(x = reorder(population, perte), y = perte)) +
@@ -292,32 +285,32 @@ moyennes<-table_join%>%
 mean_by_population <- aggregate(taux ~ population, data = table_join, FUN = mean)
 
 ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
-  geom_point(position = position_jitter(width = 0.1), size = 1) +
+  geom_point() +
   geom_hline(yintercept = 100 - mean(table_join$taux), color = "darkgreen", linetype = "dashed", size = 0.8) +
   geom_point(data=moyennes,aes(x = population, y = 100 - moyenne_taux), color = "red", size = 3)+
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Données : population animale au niveau national - Anses\nNote de lecture : En moyenne, 13.2% des animaux étudiés n’ont pas de profil de pan-sensibilité calculable.\nEn rouge, on observe la moyenne au sein de chaque population."))+
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
-  theme_minimal()+
-  annotate("text", x = 1.5, y = 18.5, label = "Moyenne = 13.2%", colour = "darkgreen", size = 3.3)
+  annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
 ```
+
+
+
 
 ```{r}
 table1 <- ModeleHUM1 %>%
   filter(`profil AMR` == "pan-sensible", bacterie=="Escherichia coli") %>%
   group_by(annee, population, region)%>%
   mutate(eff_pansensible=sum(`effectif AMR`))%>%
-  select(annee, population, region,eff_pansensible) %>%
-  unique()
+  select(annee, population, region,eff_pansensible)
 table2 <- ModeleHUM1 %>%
   filter(`profil AMR` == "C3G-R",bacterie=="Escherichia coli") %>%
   group_by(annee, population, region)%>%
   mutate(eff_C3G=sum(`effectif AMR`))%>%
-  select(annee, population, region, eff_C3G) %>%
-  unique()
+  select(annee, population, region, eff_C3G)
 
 table3 <- ModeleHUM2 %>%
   filter(`profil AMR` == "pan-sensible",bacterie=="Escherichia coli") %>%
@@ -348,42 +341,17 @@ moyennes<-table%>%
   unique()
 
 ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
-  geom_point(position = position_jitter(width = 0.1), size = 1) +
+  geom_point() +
   geom_hline(yintercept = 100 - moyenne, color = "darkgreen", linetype = "dashed", size = 0.8) +
   geom_point(data=moyennes,aes(x = population, y = 100 - moyenne_taux), color = "red", size = 3)+
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
-       caption = str_glue("Données : population humaine au niveau régional - Anses\nNote de lecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
+       caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = population)+
-  theme_minimal()+
-  annotate("text", x = 1.5, y = 7, label = paste0("Moyenne = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.2)
+  annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
 ```
-
-```{r}
-table_table_join <- rbind(table[,c(2, 6)], table_join[,c(2, 5)])
-
-moyenne<-mean(table_table_join$taux,na.rm = TRUE) 
-
-moyennes<-table_table_join%>%
-  group_by(population)%>%
-  mutate(moyenne_taux=mean(taux,na.rm=TRUE))%>%
-  select(population,moyenne_taux)%>%
-  unique()
-
-ggplot(table_table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
-  geom_boxplot() +
-  geom_hline(yintercept = 100 - moyenne, color = "darkgreen", linetype = "dashed", size = 0.8) +
-  geom_point(data=moyennes,aes(x = population, y = 100 - moyenne_taux), color = "red", size = 3)+
-  labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité n'a pas\npu être calculée au sein de chaque population étudiée",
-       x = NULL,
-       y = "Taux de perte",
-       caption = str_glue("Données : population humaine au niveau régional et animale au niveau national - Anses\nNote de lecture : En moyenne, 6.7% des espèces étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
-  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
-  annotate("text", x = 0.7, y = 4, label = paste0("Moyenne=", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.2)
-```
-
 
 #### 3 : Test de proportion
 
@@ -445,11 +413,6 @@ Pour les 2 familles, la p-valeur<0.05, on rejete l'hypothèse nulle, ainsi nous 
 #### 2 : Variabilité annuelle
 + test d'égalité des moyennes (student ?)
 L'Anova généralise le test de Student de comparaison de deux moyennes, à la comparaison de moyennes de plusieurs groupes.
-
-```{r}
-
-```
-
 
 ```{r,echo=FALSE}
 AMR_animale$annee <- as.factor(AMR_animale$annee)
@@ -552,9 +515,9 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(title = "Pan-sensibilité de la population en ville en France en 2021",
+  labs(title = "Pan-sensibilité de la population ville en France en 2021",
        fill = "Pan-sensibilité")+
-  scale_fill_gradient(name = "Taux de Pan-Sensibilité",limits=bornes,low='darkblue',high='lightblue')
+  scale_fill_gradient(name = "taux de pan-sensibilité",limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -564,8 +527,7 @@ carteAMR1_Guad<-R1_Guad%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Guadeloupe",
-       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles - Anses.\nNote de lecture : En 2021, les populations en ville ont une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
-  theme(plot.title = element_text(size = 10))+
+       caption = str_glue(paste("Données : population en ville en France métropolitaine et Outre-mer dont les données sont disponibles.\nNote de lecture : En 2021, la population en ville a une pan-sensibilité comprise entre ",min,"% et",max,"%.")))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 carteAMR1_Mart<-R1_Mart%>%
@@ -577,7 +539,6 @@ carteAMR1_Mart<-R1_Mart%>%
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Martinique")+
-  theme(plot.title = element_text(size = 10))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 
 carteAMR1_Mayotte<-R1_Mayotte%>%
@@ -589,7 +550,6 @@ carteAMR1_Mayotte<-R1_Mayotte%>%
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Mayotte")+
-  theme(plot.title = element_text(size = 10))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Guyane<-R1_Guyane%>%
   ggplot() +
@@ -600,7 +560,6 @@ carteAMR1_Guyane<-R1_Guyane%>%
         panel.grid.minor = element_blank(), 
         panel.background = element_blank(),legend.position = "none")+
   labs(title = "Guyane")+
-  theme(plot.title = element_text(size = 10))+
   scale_fill_gradient(name = "Légende", bornes,low='darkblue',high='lightblue')
 carteAMR1_Reunion<-R1_Reunion%>%
   ggplot() +
@@ -621,7 +580,7 @@ if(!require("patchwork")){
 carteAMR1 / (carteAMR1_Mart | carteAMR1_Guad)
      
 
-sizes <- c(5, 1, 1)
+sizes <- c(4, 1, 1)
 
 # Créer la mise en page en spécifiant les proportions
 layout <- plot_layout(
@@ -631,7 +590,7 @@ layout <- plot_layout(
 )
 
 # Assembler les graphiques avec la mise en page
-final_plot <- carteAMR1 / ( carteAMR1_Mart + plot_spacer() + carteAMR1_Guad) / layout
+final_plot <- carteAMR1 / (carteAMR1_Mart + plot_spacer() + carteAMR1_Guad) / layout
 
 # Afficher le graphique final
 final_plot          
@@ -680,10 +639,10 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(#title = "Pan-sensibilité de la population bovine en France en 2021",
+  labs(title = "Pan-sensibilité de la population bovine en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Données : les bovins en France métropolitaine \n(des régions (en gris et Outre-mer) sont indisponibles) - Anses.\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
-  scale_fill_gradient(name = "Taux de Pan-Sensibilité", limits = bornes,low='darkblue',high='lightblue')
+       caption = str_glue(paste("Données : les bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : La Normandie présente la pan-sensibilité la plus élevée chez les bovins : (",max(R1$`valeur AMR`,na.rm=TRUE),").")))+
+  scale_fill_gradient(name = "taux de pan-sensibilité", limits = bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -779,10 +738,10 @@ carteAMR1<-R1%>%
         panel.grid.major = element_blank(), # on supprime la grille
         panel.grid.minor = element_blank(), # on supprime la grille
         panel.background = element_blank()) + 
-  labs(#title = "Pan-sensibilité des populations chiens et chats en France en 2021",
+  labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
        fill = "Pan-sensibilité",
-       caption = str_glue(paste("Données : La population des bovins en France métropolitaine\n (des régions (en gris et Outre-mer) indisponibles) - Anses.\nNote de lecture : En Auverge-Rhône-Alpes le taux de Pan-S des chiens et chats\n est le plus bas :", min(R1$`valeur AMR`,na.rm=TRUE), "% en 2021.")))+
-  scale_fill_gradient(name = "Taux de Pan-Sensibilité", limits=bornes,low='darkblue',high='lightblue')
+       caption = str_glue(paste("Cohorte : La population des bovins en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de pan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"), et donc la résistance la plus élevée, pour l'année 2021.")))+
+  scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
   geom_sf(aes(geometry=geometry,fill=`valeur AMR`))+
@@ -945,32 +904,32 @@ Spageti plot et tests de tendance -> pour montrer que des tendances identifiable
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abattoir"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Évolution de la Pan-S des populations issues d'abattoir entre 2012 et 2021",
+  labs(title = "Hausse générale de la sensibilité des populations issues d'abattoir",
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : espèces animales issues d'abattoir - Anses \nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
+       caption = str_glue("Données : espèces animales issues d'abattoir\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("Dinde", "Porc", "Poulet", "Veau", "Volaille"))
 
 ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),], aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "Évolution de la sensibilité des animaux étudiés par le dispositif Resapath",
+  labs(title = "Baisse de la sensibilité aux antibiotiques des animaux domestiques",
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : les populations animales Resapath - Anses\nNote de lecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
+       caption = str_glue("Cohorte : Toutes les populations animales étudiées\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
   geom_line(stat = "summary", fun = "mean") +
   geom_point(stat = "summary", fun = "mean", size = 2) +
-  labs(title = "La sensibilité des populations de la famille humaine au cours du temps",
+  labs(title = "Augmentation de la sensibilité aux antibiotiques des populations humaines",
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : les populations humaines - Anses \nNote de lecture : La Pan-S des personnes en EHPAD a augmenté d'environ 20% entre 2012 et 2021.")) +
+       caption = str_glue("Données : populations humaines\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("EHPAD", "ES", "ES-hemoculture", "Ville"))
 ```
@@ -1038,7 +997,7 @@ pvaleurs_ab<-c(signif(resultats_tests$`volaille-abattoir`$p.value,2),
             signif(resultats_tests$`veau-abattoir`$p.value,2))
 pvaleurs_anim<-c(signif(resultats_tests$veau$p.value,2),
                  signif(resultats_tests$`Poule-poulet`$p.value,2),
-                 signif(resultats_tests$Porc$p.valueue,2),
+                 signif(resultats_tests$Porc$p.value,2),
                  signif(resultats_tests$Lapin$p.value,2),
                  signif(resultats_tests$Dinde$p.value,2),
                  signif(resultats_tests$Chien$p.value,2),
@@ -1066,7 +1025,7 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 #### 1 : Visualisation
 
 ```{r}
-usage_animal$path <- ifelse(usage_animal$annee == 2012, "Début de l'étude", ifelse(usage_animal$annee == 2021, "Fin de l'étude", "Au milieu de l'étude"))
+usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
 
 ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats et chiens", "Chevaux", "Lapins", "Porcs", "Volailles")),], aes(x = `valeur AMR`, y = `valeur AMU`))+
   geom_path(size = 0.8)+
@@ -1079,24 +1038,7 @@ ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats 
        caption = "Note de lecture : En 2012, les porcs avaient une valeur d'usage de 1 pour une pan-sensibilité d'environ 22.5%",
        subtitle = "Pan-sensibilité par population animale et usage d'antibiotique",
        color = "Année du test de Pan-S")+
-  scale_color_manual(values = c("Au milieu de l'étude" = "black", "Début de l'étude" = "green", "Fin de l'étude" = "red"))+
-  facet_wrap(~population, scales = "free_y")
-
-usage_animal$path[which(usage_animal$population == "Bovin-abattoir" & usage_animal$annee == 2015)] <- "Début de l'étude"
-usage_animal$path[which(usage_animal$population == "Volailles-abattoir" & usage_animal$annee == 2020)] <- "Fin de l'étude"
-
-ggplot(data = usage_animal, aes(x = `valeur AMR`, y = `valeur AMU`))+
-  geom_path(size = 0.8)+
-  geom_point(aes(colour = path), size = 1.3)+
-  theme_minimal()+
-  theme(legend.position = "bottom")+
-  labs(x = "Pan-S",
-       y = "Usage d'antibiotiques",
-       title = "Nuage de point de la Pan-S des animaux en fonction de leur usage d'antibiotiques",
-       subtitle = "Les couleurs renseignent les premières et dernières valeurs pour chaque population",
-       caption = "Données : Usage animaux - Anses\nNote de lecture : En 2012, les porcs avaient une valeur d'usage de 1 pour une pan-sensibilité d'environ 22.5%.",
-       color = "Année du test de Pan-S")+
-  scale_color_manual(values = c("Au milieu de l'étude" = "black", "Début de l'étude" = "green", "Fin de l'étude" = "red"))+
+  scale_color_manual(values = c("between" = "black", "Start (2012)" = "green", "End (2021)" = "red"))+
   facet_wrap(~population, scales = "free_y")
 
 usage_humain <- usage_humain %>%
@@ -1214,7 +1156,7 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
-hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30,, xlim = c(0, 1), xlab = "Pan-S", ylab = "Densité")
+hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S")
 title(sub = "Note : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
 lines(density(rbeta(100, 31.471, 40.324)), col = 'darkgreen', lwd = 3)
 
@@ -1319,35 +1261,31 @@ colnames(mes_predictions_animaux) <- c("population", "estimation", "borne_inf", 
 mes_predictions_animaux$estimation <- as.numeric(mes_predictions_animaux$estimation)
 mes_predictions_animaux$borne_inf <- as.numeric(mes_predictions_animaux$borne_inf)
 mes_predictions_animaux$borne_sup <- as.numeric(mes_predictions_animaux$borne_sup)
-```
 
-```{r}
 ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
-  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "#397e8a", alpha = 0.1) +
+  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "darkgreen", alpha = 0.1) +
   geom_point()+
-  geom_abline(color = "#397e8a")+
-  labs(title = "Les prédictions des pan-S humaines pour 2022 et l'intervalle de confiance associé",
-       subtitle = "Intervalle de confiance calculé à 95%",
-       caption = "Données : Pan-S des humains en 2022 par région - Anses.\n Note de lecture : La majorité des estimations se trouvent proches des vraies valeurs.",
+  geom_abline(color = "darkgreen")+
+  labs(title = "Les prédictions des pan-S humaines pour 2022 et leur intervalle de confiance",
+       caption = "Données : Pan-S des humains en 2022 par région.\n Note de lecture : L'intervalle de confiance des prédictions est calculé au niveau 95%.",
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
-  theme_minimal()+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
   scale_x_continuous(labels=scales::number_format(suffix=" %"))
 
 ggplot(data = mes_predictions_animaux, aes(x = estimation, y = `vraie valeur`))+
-  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "#397e8a", alpha = 0.1) +
+  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "darkgreen", alpha = 0.1) +
   geom_point()+
-  geom_abline(color = "#397e8a")+
-  labs(title = "Les prédictions des pan-S animales pour 2022 et l'intervalle de confiance associé",
+  geom_abline(color = "darkgreen")+
+  labs(title = "Les prédictions des pan-S animales pour 2022 et leur intervalle de confiance",
        subtitle = "Intervalle de confiance calculé à 95%",
-       caption = "Données : Pan-S des animaux en 2022 en France entière - Anses.\n Note de lecture : Seules 2 observations se trouvent dans l'intervalle de confiance des prédictions.",
+       caption = "Données : Pan-S des animaux en 2022 en France entière.\n Note de lecture : Seules 3 observations se trouvent dans l'intervalle de confiance des prédictions.",
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
-  theme_minimal()+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
   scale_x_continuous(labels=scales::number_format(suffix=" %"))
 
+install.packages("Metrics")
 library("Metrics")
 
 # Racine de l'erreur quadratique moyenne
@@ -1362,6 +1300,38 @@ for (pop in unique(mes_predictions_animaux$population)){
   print(rmse(mes_predictions_animaux$`vraie valeur`[which(mes_predictions_animaux$population == pop)], mes_predictions_animaux$estimation[which(mes_predictions_animaux$population == pop)]))
 }
 ```
+
+# Graphique pour le diapo de l'oral
+```{r}
+# Fusionner les données AMR et les prévisions par date
+graphique_oral <- usage_animal[,c(4,5,8)]
+graphique_oral$`valeur AMR` <- graphique_oral$`valeur AMR`*100
+graphique_oral$borne_inf <- graphique_oral$`valeur AMR`
+graphique_oral$borne_sup <- graphique_oral$`valeur AMR`
+mes_predictions_animaux$annee <- 2022
+colnames(mes_predictions_animaux) <- c("population", "valeur AMR", "borne_inf", "borne_sup", "delad", "delad2", "annee")
+donnees_fusionnees <- rbind(graphique_oral, mes_predictions_animaux[,-c(5, 6)])
+donnees_fusionnees$annee <- as.numeric(donnees_fusionnees$annee)
+
+pour_oral <- donnees_fusionnees[c(1:10, 15:54, 61:70, 77, 79:82, 84),]
+vraies_valeurs$AMR <- mes_predictions_animaux$`vraie valeur`
+
+# Créer le graphique ggplot
+ggplot(pour_oral, aes(x = annee, color = population, fill = population)) +
+  geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), color = "transparent", alpha = 0.3) +
+  geom_line(aes(y = `valeur AMR`))+
+  labs(title = "Prédictions et IC (à 95%) des Pan-S animales pour 2022",
+       x = NULL,
+       y = "Pan-S",
+       colour = "Population",
+       fill = "Population",
+       caption = "Données : espèces cliniques animales en France entière - Anses.")+
+  scale_x_continuous(breaks=c(2012:2022))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"))+
+  theme_minimal()
+
+```
+
 
 ### Lien à d'autres variables
 
