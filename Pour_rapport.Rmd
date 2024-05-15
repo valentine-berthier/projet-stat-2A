@@ -291,10 +291,17 @@ ggplot(table_join, aes(x = reorder(population, -taux), y = 100-taux)) +
   labs(title = "Variation de la fraction d'isolats bactériens pour lesquels la pan-sensibilité\n n'a pas pu être calculée au sein de chaque population étudiée",
        x = NULL,
        y = "Taux de perte",
+<<<<<<< HEAD
        caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2 % des animaux étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = label)+
   annotate("text", x = 1.5, y = 18.5, label = "Mean = 13.2%", colour = "darkgreen", size = 3.3)
+=======
+       caption = str_glue("Cohorte : population animale au niveau national\nLecture : En moyenne, 13.2% des animaux étudiés n’ont pas de profil de pan-sensibilité calculable.\nEn rouge, on observe la moyenne au sein de chaque population."))+
+  scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
+  scale_x_discrete(labels = label)+
+  annotate("text", x = 1.5, y = 18.5, label = "Moyenne = 13.2%", colour = "darkgreen", size = 3.3)
+>>>>>>> 1279c98ce228c84600bb40f7aacc3e36316d8c37
 ```
 
 
@@ -350,7 +357,11 @@ ggplot(table, aes(x = reorder(population, -taux), y = 100-taux)) +
        caption = str_glue("Cohorte : population humaine au niveau régional\nLecture : En moyenne, 6.4% des humains étudiés n'ont pas un profil de résistance pan-sensible.\nEn rouge, on observe la moyenne au sein de chaque population."))+
   scale_y_continuous(labels =scales::number_format(suffix=" %"),limits=c(0,100))+
   scale_x_discrete(labels = population)+
+<<<<<<< HEAD
   annotate("text", x = 0.7, y = 4, label = paste0("Mean = ", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.3)
+=======
+  annotate("text", x = 0.7, y = 4, label = paste0("Moyenne=", round(100-moyenne, 1), "%"), colour = "darkgreen", size = 3.2)
+>>>>>>> 1279c98ce228c84600bb40f7aacc3e36316d8c37
 ```
 
 #### 3 : Test de proportion
@@ -398,6 +409,27 @@ Comparer ici les valeurs pan-S si on rajoute les tetracyclines chez animal ou co
 représenter des boxplots par population des estimations régionales annuelles (ou toute autre représentation type violinplot, raincloud plot ou autre). -> pour montrer qu'il y a de la variabilité.
 Représenter des cartes (dernière année par exemple pour homme et/ou carnivores ou bovins) pour illustrer variabilité géographique.
 Faire une estimation des facteurs de variation (entre année, région, population). (analyse de variance)
+
+#### 0 : descripteurs usuels de variabilité (médiane, écart inter-quartiles, variance, écart-type,coefficient de variation)
+```{r}
+# Calculer les descripteurs de variabilité pour chaque groupe
+resultats <- AMR %>%
+  group_by(region) %>%  # Grouper les données par la variable population
+  summarise(
+    mediane = median(`valeur AMR`),  # Calcul de la médiane
+    q1 = quantile(`valeur AMR`, 0.25),  # Calcul du premier quartile
+    q3 = quantile(`valeur AMR`, 0.75),  # Calcul du troisième quartile
+    iqr = q3 - q1,  # Calcul de l'écart inter-quartiles (IQR)
+    variance = var(`valeur AMR`),  # Calcul de la variance
+    ecart_type = sd(`valeur AMR`),  # Calcul de l'écart-type
+    coefficient_variation = (ecart_type / mean(`valeur AMR`)) * 100  # Calcul du coefficient de variation
+  )
+
+# Afficher les résultats
+print(resultats)
+
+```
+
 
 #### ok 1 : Variabilité par population
 
@@ -740,7 +772,14 @@ carteAMR1<-R1%>%
         panel.background = element_blank()) + 
   labs(title = "Pan-sensibilité de la population chien/chat en France en 2021",
        fill = "Pan-sensibilité",
+<<<<<<< HEAD
        caption = str_glue(paste("Cohorte : La population des bovins en France métropolitaine (les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles).\nLecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de pan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"), et donc la résistance la plus élevée, pour l'année 2021.")))+
+=======
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine\n(les données d'Outres-Mer et certaines régions (en gris) ne sont pas disponibles) - Anses\nNote de lecture : La population chien & chat de l'Auverge-Rhône-Alpes présente le taux de\npan-sensibilité le plus faible (",min(R1$`valeur AMR`,na.rm=TRUE),"),et donc la résistance la plus élevée, pour l'année 2021.")))+
+
+       caption = str_glue(paste("Données : La population des bovins en France métropolitaine (des régions (en gris et Outre-mer) indisponibles).\nNote de lecture : En Auverge-Rhône-Alpes le taux de pan-sensibilité des chiens et chats est le plus bas :", min(R1$`valeur AMR`,na.rm=TRUE), "% en 2021.")))+
+
+>>>>>>> 1279c98ce228c84600bb40f7aacc3e36316d8c37
   scale_fill_gradient(name = "taux de pan-sensibilité", limits=bornes,low='darkblue',high='lightblue')
 carteAMR1_Guad<-R1_Guad%>%
   ggplot() +
@@ -823,6 +862,19 @@ ggpubr::ggqqplot(residuals(model_reg))
 model_annee <- lm(`valeur AMR` ~ annee, data = data_anova)
 ggpubr::ggqqplot(residuals(model_annee))# Sur le qqplot, les points sont, en grande partie, alignés avec la première bissectrice, on suppose l'hypothèse de normalité vérifiée
 
+model_annee <- lm(`valeur AMR` ~ annee + region, data = AMR_regionale)
+# Génération du qqplot avec les résidus du modèle
+qqplot <- ggpubr::ggqqplot(residuals(model_annee))
+
+# Ajout d'un titre et d'une note de lecture
+qqplot +
+  ggtitle("Diagramme Quantile-Quantile") +  # Ajout du titre
+  xlab("Quantiles théoriques") +  # Ajout de l'axe x
+  ylab("Quantiles empiriques") +  # Ajout de l'axe y
+  labs(caption = str_glue("Données : populations régionales\nNote de lecture : La bissectrice représente les quantiles de la loi normale.")) +
+  theme_minimal()  # Choix d'un thème pour améliorer l'esthétique du graphique
+
+
 ## 3 - Hypothèse d’homogénéité des variances
 # Hypothèse vérifiée pour la variable annee (vu plus tôt) et pour la variable region (lorsqu'on prend chaque population indépendamment). Les résultats devront être interprétés par conséquent. De même, l'hypothèse d'homogénéité des variances n'est pas vérifiée pour des populations différentes --> chaque population indépendante. 
 ################## 1 test par population pour les régions
@@ -857,7 +909,23 @@ for (i in 1:length(anova_results)) {
 }
 
 anova_test(`valeur AMR` ~ population + region + annee, data = AMR_regionale)
+
 ```
+
+```{r}
+model_annee <- lm(`valeur AMR` ~ annee + region, data = AMR_regionale)
+# Génération du qqplot avec les résidus du modèle
+qqplot <- ggpubr::ggqqplot(residuals(model_annee))
+
+# Ajout d'un titre et d'une note de lecture
+qqplot +
+  ggtitle("Diagramme Quantile-Quantile") +  # Ajout du titre
+  xlab("Quantiles théoriques") +  # Ajout de l'axe x
+  ylab("Quantiles empiriques") +  # Ajout de l'axe y
+  labs(caption = str_glue("Données : populations régionales - Anses\nNote de lecture : La bissectrice représente les quantiles de la loi normale.")) +
+  theme_minimal()  # Choix d'un thème pour améliorer l'esthétique du graphique
+```
+
 La variable qui apporte le plus de variabilité au sein des données de pan-S humaines est la population (66 %), puis la région (54 %) et l'année (qui explique seulement 32 % de la variabilité). Cela n'est pas en accord avec ce qu'avait supposé Mme. Chauvin. On observe tout de même une grande part de variabilité dûe aux régions en comparaison avec l'anova sur les animaux.
 
 #### Animal
@@ -908,7 +976,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale-abat
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : espèces animales issues d'abattoir\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
+       caption = str_glue("Données : espèces animales issues d'abattoir - Anses\nNote de lecture : De 2019 à 2021, les bactéries étudiées sur les veaux ont démontré\n plus de résistance aux antibiotiques que les années précédentes.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("Dinde", "Porc", "Poulet", "Veau", "Volaille"))
 
@@ -919,7 +987,7 @@ ggplot(AMR_nationale_animal[which(AMR_nationale_animal$famille2 == "animale"),],
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Cohorte : Toutes les populations animales étudiées\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
+       caption = str_glue("Cohorte : Toutes les populations animales étudiées - Anses\nLecture : La population bovin-adulte a perdu 17% de sensibilité de 2012 à 2021.")) +
   theme_minimal()
 
 ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population, color = population)) +
@@ -929,7 +997,7 @@ ggplot(AMR_nationale_humain, aes(x = annee, y = `valeur AMR`, group = population
        x = NULL,
        y = "Pan-sensibilité moyenne",
        color = "Population",
-       caption = str_glue("Données : populations humaines\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
+       caption = str_glue("Données : populations humaines - Anses\nNote de lecture : Les personnes en EHPAD sont 1,07% plus sensibles en 2021 qu'en 2012.")) +
   theme_minimal()+
   scale_color_discrete(labels = c("EHPAD", "ES", "ES-hemoculture", "Ville"))
 ```
@@ -1025,6 +1093,7 @@ Significativité attendue et force du lien (part de variabilité expliquée par 
 #### 1 : Visualisation
 
 ```{r}
+set.seed(123)
 usage_animal$path <- ifelse(usage_animal$annee == 2012, "Start (2012)", ifelse(usage_animal$annee == 2021, "End (2021)", "between"))
 
 ggplot(data = usage_animal[which(usage_animal$population %in% c("Bovin", "Chats et chiens", "Chevaux", "Lapins", "Porcs", "Volailles")),], aes(x = `valeur AMR`, y = `valeur AMU`))+
@@ -1086,6 +1155,7 @@ L'utilisation d'antibiotique fait baisser la sensibilité pour toutes les popula
 Pour bien comprendre que nous devons utiliser une régression bêta, se pencher sur les résults d'une régression logit généralisée et comparer les déviances des deux modèles.
 
 ```{r}
+
 # Dans la régression bêta, chaque variable doit être une proportion, donc doit avoir des valeurs comprises entre 0 et 1. Or la valeur de résistance est comprise entre 0 et 100.
 usage_animal <- usage_animal %>%
   mutate(`valeur AMR` = `valeur AMR`*0.01)
@@ -1156,8 +1226,8 @@ for (pop in unique(usage_humain$population)){
   lines(density(rbeta(100, a, b)), col = 'purple', lwd = 3)
 }
 
-hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S")
-title(sub = "Note : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
+hist(usage_humain$`valeur AMR`[which(usage_humain$population == "EHPAD")], freq = FALSE, breaks = 30, main = "Les pan-S des populations d'EHPAD semblent suivre une loi bêta", xlim = c(0, 1), xlab = "Pan-S",ylab="Densité")
+title(sub = "\nDonnées : les populations en EHPAD - Anses\nIndication : Bêta(a, b) où a et b sont calculés à partir de la moyenne et de la variance empirique", cex.sub = 0.8)
 lines(density(rbeta(100, 31.471, 40.324)), col = 'darkgreen', lwd = 3)
 
 # On fait la régression bêta
@@ -1266,8 +1336,14 @@ ggplot(data = mes_predictions_humains, aes(x = estimation, y = `vraie valeur`))+
   geom_ribbon(aes(ymin = borne_inf, ymax = borne_sup), fill = "darkgreen", alpha = 0.1) +
   geom_point()+
   geom_abline(color = "darkgreen")+
+<<<<<<< HEAD
   labs(title = "Les prédictions des pan-S humaines pour 2022 et leur intervalle de confiance",
        caption = "Données : Pan-S des humains en 2022 par région.\n Note de lecture : L'intervalle de confiance des prédictions est calculé au niveau 95%.",
+=======
+  labs(title = "Les prédictions des pan-S humaines pour 2022 et l'intervalle de confiance associé",
+       subtitle = "Intervalle de confiance calculé à 95%",
+       caption = "Données : Pan-S des humains en 2022 par région - Anses\n Note de lecture : La majorité des estimations se trouvent proches des vraies valeurs.",
+>>>>>>> 1279c98ce228c84600bb40f7aacc3e36316d8c37
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
@@ -1279,7 +1355,11 @@ ggplot(data = mes_predictions_animaux, aes(x = estimation, y = `vraie valeur`))+
   geom_abline(color = "darkgreen")+
   labs(title = "Les prédictions des pan-S animales pour 2022 et leur intervalle de confiance",
        subtitle = "Intervalle de confiance calculé à 95%",
+<<<<<<< HEAD
        caption = "Données : Pan-S des animaux en 2022 en France entière.\n Note de lecture : Seules 3 observations se trouvent dans l'intervalle de confiance des prédictions.",
+=======
+       caption = "Données : Pan-S des animaux en 2022 en France entière - Anses\n Note de lecture : Seules 2 observations se trouvent dans l'intervalle de confiance des prédictions.",
+>>>>>>> 1279c98ce228c84600bb40f7aacc3e36316d8c37
        x = "Pan-S estimée",
        y = "Pan-S réelle")+
   scale_y_continuous(labels =scales::number_format(suffix=" %"))+
@@ -1431,4 +1511,26 @@ table5<-table4%>%
 
 ```
 
+
+
+
+```{r}
+UA<-usage_animal%>%
+  select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+UA<-usage_animal[c(1,24,32,45,48),]%>%
+    select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+
+usage<-rbind(usage_humain[1,],usage_humain[88,],usage_humain[124,],usage_humain[180,])
+usage<-usage%>%
+  mutate(famille="humaine")%>%
+    select(famille,population,annee,region,`valeur AMU`,`valeur AMR`,`effectif AMR`)
+
+rbind(UA,usage)
+
+xtable(rbind(UA,usage))
+names(usage)
+
+names(UA)
+
+```
 
